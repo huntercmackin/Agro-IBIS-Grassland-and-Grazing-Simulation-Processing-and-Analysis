@@ -1,0 +1,2943 @@
+---
+title: "Master's Thesis Graphing and Statistics"
+author: "Hunter Mackin"
+date: "2022-10-24"
+output: html_document
+---
+
+```{r}
+# Loading libraries
+library(tidyverse)
+library(ncdf4)
+library(raster)
+library(reshape2)
+library(tdr)
+library(rtry)
+library(traits)
+library(writexl)
+library(readxl)
+library(ggpubr)
+library(ggmap)
+library(sp)
+library(maps)
+library(mapdata)
+library(cowplot)
+library(grid)
+library(gridExtra)
+```
+
+```{r}
+### New M.S. thesis runs - FF only
+##### Setting working directory
+setwd("/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis")
+
+##### Reading in day and year dataframes
+date <- read_csv("Date_daily.csv") # This includes every day from 1/1/1961 to 12/31/2021
+date_spinup <- read_csv("Date_daily_spinup.csv") # This includes every day from 1/1/1650 to 12/31/1960
+year <- read_csv("Year.csv") # This includes every year from 1961 to 2021
+year_spinup <- read_csv("Year_spinup.csv") # This includes every year from 1650 to 1960
+
+##### Reading in NetCDF data (simulation runs)
+#### Frankbrook Farm runs
+### Spinup
+spinup_FF_biom_readin <- nc_open("FF-spinup-biomass.nc")
+spinup_FF_cbiol <- ncvar_get(spinup_FF_biom_readin, "cbiol")
+spinup_FF_cbios <- ncvar_get(spinup_FF_biom_readin, "cbios")
+spinup_FF_cbiog <- ncvar_get(spinup_FF_biom_readin, "cbiog")
+spinup_FF_cbior <- ncvar_get(spinup_FF_biom_readin, "cbior")
+spinup_FF_biomass <- ncvar_get(spinup_FF_biom_readin, "biomass")
+spinup_FF_plai_readin <- nc_open("FF-spinup-plai.nc")
+spinup_FF_plai <- ncvar_get(spinup_FF_plai_readin, "plai")
+spinup_FF_aet_d_readin <- nc_open("FF-spinup-aet-d.nc")
+spinup_FF_aet_d <- ncvar_get(spinup_FF_aet_d_readin, "aet")
+spinup_FF_wsoi_d_readin <- nc_open("FF-spinup-wsoi-d.nc")
+spinup_FF_wsoi_d <- ncvar_get(spinup_FF_wsoi_d_readin, "wsoi")
+# No PFT
+spinup_FF_pasture_readin <- nc_open("FF-spinup-pasture.nc")
+spinup_FF_agbiom <- ncvar_get(spinup_FF_pasture_readin, "agbiom")
+spinup_FF_panpp <- ncvar_get(spinup_FF_pasture_readin, "panpp")
+spinup_FF_pbnpp <- ncvar_get(spinup_FF_pasture_readin, "pbnpp")
+spinup_FF_grazedbiom <- ncvar_get(spinup_FF_pasture_readin, "grazedbiom")
+spinup_FF_l3agbiomfrac <- ncvar_get(spinup_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+spinup_FF_npp_readin <- nc_open("FF-spinup-npp.nc")
+spinup_FF_anpptot <- ncvar_get(spinup_FF_npp_readin, "anpptot")
+spinup_FF_npptot <- ncvar_get(spinup_FF_npp_readin, "npptot")
+spinup_FF_npp <- ncvar_get(spinup_FF_npp_readin, "npp")
+spinup_FF_gsdays <- ncvar_get(spinup_FF_npp_readin, "gsdays")
+spinup_FF_aet_y_readin <- nc_open("FF-spinup-aet-y.nc")
+spinup_FF_aet_y <- ncvar_get(spinup_FF_aet_y_readin, "aet")
+spinup_FF_wsoi_y_readin <- nc_open("FF-spinup-wsoi-y.nc")
+spinup_FF_wsoi_y <- ncvar_get(spinup_FF_wsoi_y_readin, "wsoi")
+spinup_FF_vegtype0_readin <- nc_open("FF-spinup-vegtype0.nc")
+spinup_FF_vegtype0 <- ncvar_get(spinup_FF_vegtype0_readin, "vegtype0")
+spinup_FF_csoi_readin <- nc_open("FF-spinup-csoi.nc")
+spinup_FF_totcsoi <- ncvar_get(spinup_FF_csoi_readin, "totcsoi")
+
+
+### C3 Only
+## Ungrazed
+# Daily
+C3_ung_FF_biom_readin <- nc_open("FF-C3-ung-biomass.nc")
+C3_ung_FF_cbiol <- ncvar_get(C3_ung_FF_biom_readin, "cbiol")
+C3_ung_FF_cbios <- ncvar_get(C3_ung_FF_biom_readin, "cbios")
+C3_ung_FF_cbiog <- ncvar_get(C3_ung_FF_biom_readin, "cbiog")
+C3_ung_FF_cbior <- ncvar_get(C3_ung_FF_biom_readin, "cbior")
+C3_ung_FF_biomass <- ncvar_get(C3_ung_FF_biom_readin, "biomass")
+C3_ung_FF_plai_readin <- nc_open("FF-C3-ung-plai.nc")
+C3_ung_FF_plai <- ncvar_get(C3_ung_FF_plai_readin, "plai")
+C3_ung_FF_aet_d_readin <- nc_open("FF-C3-ung-aet-d.nc")
+C3_ung_FF_aet_d <- ncvar_get(C3_ung_FF_aet_d_readin, "aet")
+C3_ung_FF_wsoi_d_readin <- nc_open("FF-C3-ung-wsoi-d.nc")
+C3_ung_FF_wsoi_d <- ncvar_get(C3_ung_FF_wsoi_d_readin, "wsoi")
+# No PFT
+C3_ung_FF_pasture_readin <- nc_open("FF-C3-ung-pasture.nc")
+C3_ung_FF_agbiom <- ncvar_get(C3_ung_FF_pasture_readin, "agbiom")
+C3_ung_FF_panpp <- ncvar_get(C3_ung_FF_pasture_readin, "panpp")
+C3_ung_FF_pbnpp <- ncvar_get(C3_ung_FF_pasture_readin, "pbnpp")
+C3_ung_FF_grazedbiom <- ncvar_get(C3_ung_FF_pasture_readin, "grazedbiom")
+C3_ung_FF_l3agbiomfrac <- ncvar_get(C3_ung_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+C3_ung_FF_npp_readin <- nc_open("FF-C3-ung-npp.nc")
+C3_ung_FF_anpptot <- ncvar_get(C3_ung_FF_npp_readin, "anpptot")
+C3_ung_FF_npptot <- ncvar_get(C3_ung_FF_npp_readin, "npptot")
+C3_ung_FF_npp <- ncvar_get(C3_ung_FF_npp_readin, "npp")
+C3_ung_FF_gsdays <- ncvar_get(C3_ung_FF_npp_readin, "gsdays")
+C3_ung_FF_aet_y_readin <- nc_open("FF-C3-ung-aet-y.nc")
+C3_ung_FF_aet_y <- ncvar_get(C3_ung_FF_aet_y_readin, "aet")
+C3_ung_FF_wsoi_y_readin <- nc_open("FF-C3-ung-wsoi-y.nc")
+C3_ung_FF_wsoi_y <- ncvar_get(C3_ung_FF_wsoi_y_readin, "wsoi")
+C3_ung_FF_vegtype0_readin <- nc_open("FF-C3-ung-vegtype0.nc")
+C3_ung_FF_vegtype0 <- ncvar_get(C3_ung_FF_vegtype0_readin, "vegtype0")
+C3_ung_FF_csoi_readin <- nc_open("FF-C3-ung-csoi.nc")
+C3_ung_FF_totcsoi <- ncvar_get(C3_ung_FF_csoi_readin, "totcsoi")
+C3_ung_FF_gsl3l4_readin <- nc_open("FF-C3-ung-gsl3l4.nc")
+C3_ung_FF_gslenl3 <- ncvar_get(C3_ung_FF_gsl3l4_readin, "gslenl3")
+C3_ung_FF_gstdl3 <- ncvar_get(C3_ung_FF_gsl3l4_readin, "gstdl3")
+C3_ung_FF_drain_nleachy_readin <- nc_open("FF-C3-ung-drain_nleachy.nc")
+C3_ung_FF_no3leach_idepth <- ncvar_get(C3_ung_FF_drain_nleachy_readin, "no3leach_idepth")
+C3_ung_FF_prunoff_readin <- nc_open("FF-C3-ung-prunoff.nc")
+C3_ung_FF_atotrunp <- ncvar_get(C3_ung_FF_prunoff_readin, "atotrunp")
+
+## 2-Day Rotation
+# Daily
+C3_rot2_FF_biom_readin <- nc_open("FF-C3-rot2-biomass.nc")
+C3_rot2_FF_cbiol <- ncvar_get(C3_rot2_FF_biom_readin, "cbiol")
+C3_rot2_FF_cbios <- ncvar_get(C3_rot2_FF_biom_readin, "cbios")
+C3_rot2_FF_cbiog <- ncvar_get(C3_rot2_FF_biom_readin, "cbiog")
+C3_rot2_FF_cbior <- ncvar_get(C3_rot2_FF_biom_readin, "cbior")
+C3_rot2_FF_biomass <- ncvar_get(C3_rot2_FF_biom_readin, "biomass")
+C3_rot2_FF_plai_readin <- nc_open("FF-C3-rot2-plai.nc")
+C3_rot2_FF_plai <- ncvar_get(C3_rot2_FF_plai_readin, "plai")
+C3_rot2_FF_aet_d_readin <- nc_open("FF-C3-rot2-aet-d.nc")
+C3_rot2_FF_aet_d <- ncvar_get(C3_rot2_FF_aet_d_readin, "aet")
+C3_rot2_FF_wsoi_d_readin <- nc_open("FF-C3-rot2-wsoi-d.nc")
+C3_rot2_FF_wsoi_d <- ncvar_get(C3_rot2_FF_wsoi_d_readin, "wsoi")
+# No PFT
+C3_rot2_FF_pasture_readin <- nc_open("FF-C3-rot2-pasture.nc")
+C3_rot2_FF_agbiom <- ncvar_get(C3_rot2_FF_pasture_readin, "agbiom")
+C3_rot2_FF_panpp <- ncvar_get(C3_rot2_FF_pasture_readin, "panpp")
+C3_rot2_FF_pbnpp <- ncvar_get(C3_rot2_FF_pasture_readin, "pbnpp")
+C3_rot2_FF_grazedbiom <- ncvar_get(C3_rot2_FF_pasture_readin, "grazedbiom")
+C3_rot2_FF_l3agbiomfrac <- ncvar_get(C3_rot2_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+C3_rot2_FF_npp_readin <- nc_open("FF-C3-rot2-npp.nc")
+C3_rot2_FF_anpptot <- ncvar_get(C3_rot2_FF_npp_readin, "anpptot")
+C3_rot2_FF_npptot <- ncvar_get(C3_rot2_FF_npp_readin, "npptot")
+C3_rot2_FF_npp <- ncvar_get(C3_rot2_FF_npp_readin, "npp")
+C3_rot2_FF_gsdays <- ncvar_get(C3_rot2_FF_npp_readin, "gsdays")
+C3_rot2_FF_aet_y_readin <- nc_open("FF-C3-rot2-aet-y.nc")
+C3_rot2_FF_aet_y <- ncvar_get(C3_rot2_FF_aet_y_readin, "aet")
+C3_rot2_FF_wsoi_y_readin <- nc_open("FF-C3-rot2-wsoi-y.nc")
+C3_rot2_FF_wsoi_y <- ncvar_get(C3_rot2_FF_wsoi_y_readin, "wsoi")
+C3_rot2_FF_vegtype0_readin <- nc_open("FF-C3-rot2-vegtype0.nc")
+C3_rot2_FF_vegtype0 <- ncvar_get(C3_rot2_FF_vegtype0_readin, "vegtype0")
+C3_rot2_FF_csoi_readin <- nc_open("FF-C3-rot2-csoi.nc")
+C3_rot2_FF_totcsoi <- ncvar_get(C3_rot2_FF_csoi_readin, "totcsoi")
+C3_rot2_FF_gsl3l4_readin <- nc_open("FF-C3-rot2-gsl3l4.nc")
+C3_rot2_FF_gslenl3 <- ncvar_get(C3_rot2_FF_gsl3l4_readin, "gslenl3")
+C3_rot2_FF_gstdl3 <- ncvar_get(C3_rot2_FF_gsl3l4_readin, "gstdl3")
+C3_rot2_FF_drain_nleachy_readin <- nc_open("FF-C3-rot2-drain_nleachy.nc")
+C3_rot2_FF_no3leach_idepth <- ncvar_get(C3_rot2_FF_drain_nleachy_readin, "no3leach_idepth")
+C3_rot2_FF_prunoff_readin <- nc_open("FF-C3-rot2-prunoff.nc")
+C3_rot2_FF_atotrunp <- ncvar_get(C3_rot2_FF_prunoff_readin, "atotrunp")
+
+## Continuous
+# Daily
+C3_cont_FF_biom_readin <- nc_open("FF-C3-cont-biomass.nc")
+C3_cont_FF_cbiol <- ncvar_get(C3_cont_FF_biom_readin, "cbiol")
+C3_cont_FF_cbios <- ncvar_get(C3_cont_FF_biom_readin, "cbios")
+C3_cont_FF_cbiog <- ncvar_get(C3_cont_FF_biom_readin, "cbiog")
+C3_cont_FF_cbior <- ncvar_get(C3_cont_FF_biom_readin, "cbior")
+C3_cont_FF_biomass <- ncvar_get(C3_cont_FF_biom_readin, "biomass")
+C3_cont_FF_plai_readin <- nc_open("FF-C3-cont-plai.nc")
+C3_cont_FF_plai <- ncvar_get(C3_cont_FF_plai_readin, "plai")
+C3_cont_FF_aet_d_readin <- nc_open("FF-C3-cont-aet-d.nc")
+C3_cont_FF_aet_d <- ncvar_get(C3_cont_FF_aet_d_readin, "aet")
+C3_cont_FF_wsoi_d_readin <- nc_open("FF-C3-cont-wsoi-d.nc")
+C3_cont_FF_wsoi_d <- ncvar_get(C3_cont_FF_wsoi_d_readin, "wsoi")
+# No PFT
+C3_cont_FF_pasture_readin <- nc_open("FF-C3-cont-pasture.nc")
+C3_cont_FF_agbiom <- ncvar_get(C3_cont_FF_pasture_readin, "agbiom")
+C3_cont_FF_panpp <- ncvar_get(C3_cont_FF_pasture_readin, "panpp")
+C3_cont_FF_pbnpp <- ncvar_get(C3_cont_FF_pasture_readin, "pbnpp")
+C3_cont_FF_grazedbiom <- ncvar_get(C3_cont_FF_pasture_readin, "grazedbiom")
+C3_cont_FF_l3agbiomfrac <- ncvar_get(C3_cont_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+C3_cont_FF_npp_readin <- nc_open("FF-C3-cont-npp.nc")
+C3_cont_FF_anpptot <- ncvar_get(C3_cont_FF_npp_readin, "anpptot")
+C3_cont_FF_npptot <- ncvar_get(C3_cont_FF_npp_readin, "npptot")
+C3_cont_FF_npp <- ncvar_get(C3_cont_FF_npp_readin, "npp")
+C3_cont_FF_gsdays <- ncvar_get(C3_cont_FF_npp_readin, "gsdays")
+C3_cont_FF_aet_y_readin <- nc_open("FF-C3-cont-aet-y.nc")
+C3_cont_FF_aet_y <- ncvar_get(C3_cont_FF_aet_y_readin, "aet")
+C3_cont_FF_wsoi_y_readin <- nc_open("FF-C3-cont-wsoi-y.nc")
+C3_cont_FF_wsoi_y <- ncvar_get(C3_cont_FF_wsoi_y_readin, "wsoi")
+C3_cont_FF_vegtype0_readin <- nc_open("FF-C3-cont-vegtype0.nc")
+C3_cont_FF_vegtype0 <- ncvar_get(C3_cont_FF_vegtype0_readin, "vegtype0")
+C3_cont_FF_csoi_readin <- nc_open("FF-C3-cont-csoi.nc")
+C3_cont_FF_totcsoi <- ncvar_get(C3_cont_FF_csoi_readin, "totcsoi")
+C3_cont_FF_gsl3l4_readin <- nc_open("FF-C3-cont-gsl3l4.nc")
+C3_cont_FF_gslenl3 <- ncvar_get(C3_cont_FF_gsl3l4_readin, "gslenl3")
+C3_cont_FF_gstdl3 <- ncvar_get(C3_cont_FF_gsl3l4_readin, "gstdl3")
+C3_cont_FF_drain_nleachy_readin <- nc_open("FF-C3-cont-drain_nleachy.nc")
+C3_cont_FF_no3leach_idepth <- ncvar_get(C3_cont_FF_drain_nleachy_readin, "no3leach_idepth")
+C3_cont_FF_prunoff_readin <- nc_open("FF-C3-cont-prunoff.nc")
+C3_cont_FF_atotrunp <- ncvar_get(C3_cont_FF_prunoff_readin, "atotrunp")
+
+
+CO2 <- read_csv("CO2_historical_NOAA2021.csv")
+CO2 <- CO2 %>%
+  filter(Year >= 1961) %>%
+  dplyr::select(-Year)
+
+FF_waterbal_readin <- nc_open("FF-waterbal.nc")
+FF_annualprec <- ncvar_get(FF_waterbal_readin, "annualprec")
+
+#### Franbrook Farm runs
+### C3 Only
+### Spinup
+# Daily
+spinup_FF_daily_all_df <- data.frame(day=date_spinup,PFT="C3 Grass",biomass=spinup_FF_biomass[12,],cbiol=spinup_FF_cbiol[12,],
+                                        cbios=spinup_FF_cbios[12,],cbiog=spinup_FF_cbiog[12,],cbior=spinup_FF_cbior[12,],
+                                        plai=spinup_FF_plai[12,],SimulationType="Spinup",Management="Ungrazed",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom=spinup_FF_agbiom,
+                                        grazedbiom=spinup_FF_grazedbiom,l3agbiomfrac=spinup_FF_l3agbiomfrac,
+                                        panpp=spinup_FF_panpp,pbnpp=spinup_FF_pbnpp)
+# Annual
+spinup_FF_yearly_all_df <- data.frame(year=year_spinup,anpptot=spinup_FF_anpptot,npptot=spinup_FF_npptot,C4_npp=spinup_FF_npp[11,],
+                                       C3_npp=spinup_FF_npp[12,],aet_y=spinup_FF_aet_y,wsoi_y=spinup_FF_wsoi_y,
+                                       SimulationType="Spinup",Management="Ungrazed",
+                                       totcsoi=spinup_FF_totcsoi,Location="FF",Lat=42.73796,Lon=-89.75369,vegtype0=spinup_FF_vegtype0)
+
+## Ungrazed
+# Daily
+C3_ung_FF_daily_all_df <- data.frame(day=date,PFT="C3 Grass",biomass=C3_ung_FF_biomass[12,],cbiol=C3_ung_FF_cbiol[12,],
+                                        cbios=C3_ung_FF_cbios[12,],cbiog=C3_ung_FF_cbiog[12,],cbior=C3_ung_FF_cbior[12,],
+                                        plai=C3_ung_FF_plai[12,],SimulationType="Only C3 grass allowed",Management="Ungrazed",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom=C3_ung_FF_agbiom,grazedbiom=C3_ung_FF_grazedbiom,
+                                        l3agbiomfrac=C3_ung_FF_l3agbiomfrac,panpp=C3_ung_FF_panpp,pbnpp=C3_ung_FF_pbnpp)
+# Annual
+C3_ung_FF_yearly_all_df <- data.frame(year=year,anpptot=C3_ung_FF_anpptot,npptot=C3_ung_FF_npptot,C4_npp=C3_ung_FF_npp[11,],
+                                       C3_npp=C3_ung_FF_npp[12,],aet_y=C3_ung_FF_aet_y,wsoi_y=C3_ung_FF_wsoi_y,CO2=CO2,
+                                       SimulationType="Only C3 grass allowed",Management="Ungrazed",
+                                       totcsoi=C3_ung_FF_totcsoi,Location="FF",Lat=42.73796,Lon=-89.75369,vegtype0=C3_ung_FF_vegtype0,
+                                       gslenl3=C3_ung_FF_gslenl3,gstdl3=C3_ung_FF_gstdl3,annualprec=FF_annualprec,
+                                       no3leach_idepth=C3_ung_FF_no3leach_idepth, atotrunp=C3_ung_FF_atotrunp)
+## 2-Day Rotation
+# Daily
+C3_rot2_FF_daily_all_df <- data.frame(day=date,PFT="C3 Grass",biomass=C3_rot2_FF_biomass[12,],cbiol=C3_rot2_FF_cbiol[12,],
+                                        cbios=C3_rot2_FF_cbios[12,],cbiog=C3_rot2_FF_cbiog[12,],cbior=C3_rot2_FF_cbior[12,],
+                                        plai=C3_rot2_FF_plai[12,],SimulationType="Only C3 grass allowed",Management="2-Day Rotation",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom=C3_rot2_FF_agbiom,grazedbiom=C3_rot2_FF_grazedbiom,
+                                        l3agbiomfrac=C3_rot2_FF_l3agbiomfrac,panpp=C3_rot2_FF_panpp,pbnpp=C3_rot2_FF_pbnpp)
+# Annual
+C3_rot2_FF_yearly_all_df <- data.frame(year=year,anpptot=C3_rot2_FF_anpptot,npptot=C3_rot2_FF_npptot,C4_npp=C3_rot2_FF_npp[11,],
+                                       C3_npp=C3_rot2_FF_npp[12,],aet_y=C3_rot2_FF_aet_y,wsoi_y=C3_rot2_FF_wsoi_y,CO2=CO2,
+                                       SimulationType="Only C3 grass allowed",Management="2-Day Rotation",
+                                       totcsoi=C3_rot2_FF_totcsoi,Location="FF",Lat=42.73796,Lon=-89.75369,vegtype0=C3_rot2_FF_vegtype0,
+                                       gslenl3=C3_rot2_FF_gslenl3,gstdl3=C3_rot2_FF_gstdl3,annualprec=FF_annualprec,
+                                       no3leach_idepth=C3_rot2_FF_no3leach_idepth, atotrunp=C3_rot2_FF_atotrunp)
+## Continuous
+C3_cont_FF_daily_all_df <- data.frame(day=date,PFT="C3 Grass",biomass=C3_cont_FF_biomass[12,],cbiol=C3_cont_FF_cbiol[12,],
+                                        cbios=C3_cont_FF_cbios[12,],cbiog=C3_cont_FF_cbiog[12,],cbior=C3_cont_FF_cbior[12,],
+                                        plai=C3_cont_FF_plai[12,],SimulationType="Only C3 grass allowed",Management="Continuous Grazing",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom=C3_cont_FF_agbiom,grazedbiom=C3_cont_FF_grazedbiom,
+                                        l3agbiomfrac=C3_cont_FF_l3agbiomfrac,panpp=C3_cont_FF_panpp,pbnpp=C3_cont_FF_pbnpp)
+# Annual
+C3_cont_FF_yearly_all_df <- data.frame(year=year,anpptot=C3_cont_FF_anpptot,npptot=C3_cont_FF_npptot,C4_npp=C3_cont_FF_npp[11,],
+                                       C3_npp = C3_cont_FF_npp[12,],aet_y=C3_cont_FF_aet_y,wsoi_y=C3_cont_FF_wsoi_y,CO2=CO2,
+                                       SimulationType="Only C3 grass allowed",Management="Continuous Grazing",
+                                       totcsoi=C3_cont_FF_totcsoi,Location="FF",Lat=42.73796,Lon=-89.75369,vegtype0=C3_cont_FF_vegtype0,
+                                       gslenl3=C3_cont_FF_gslenl3,gstdl3=C3_cont_FF_gstdl3,annualprec=FF_annualprec,
+                                       no3leach_idepth=C3_cont_FF_no3leach_idepth, atotrunp=C3_cont_FF_atotrunp)
+
+# Combining all Franbrook Farm runs
+FF_daily <- rbind(C3_ung_FF_daily_all_df,C3_rot2_FF_daily_all_df,C3_cont_FF_daily_all_df)
+FF_yearly <- rbind(C3_ung_FF_yearly_all_df,C3_rot2_FF_yearly_all_df,C3_cont_FF_yearly_all_df)
+
+write.csv(FF_daily, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/FF_daily.csv", row.names=FALSE)
+write.csv(FF_yearly, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/FF_yearly.csv", row.names=FALSE)
+write.csv(spinup_FF_daily_all_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/FF_daily_spinup.csv")
+write.csv(spinup_FF_yearly_all_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/FF_yearly_spinup.csv")
+```
+
+```{r}
+### M.S. thesis model evaluation
+
+### Validation
+FF_daily <- read_csv("FF_daily.csv")
+FF_yearly <- read_csv("FF_yearly.csv")
+FF_daily_oates <- read_csv("FF_daily_oates.csv")
+FF_val <- read_csv("Oates_FF_NPP 06_07 data.csv", skip=5)
+
+##### Creating standard error function
+calcSE<-function(x){
+  x <- x[is.na(x)==F]
+  sd(x)/sqrt(length(x))
+}
+ 
+### Franbrook Farm
+# Simulation data - generalized model
+FF_daily_C3 <- FF_daily %>%
+  filter(Location == "FF") %>%
+#  filter(Date >= '2006-01-01' & Date <= '2008-01-01') %>%
+  filter(Date >= '2006-04-26' & Date <= '2007-11-12') %>%
+  dplyr::select(Date,Location,PFT,SimulationType,Management,plai,agbiom,grazedbiom,l3agbiomfrac,biomass) %>%
+  filter(agbiom != "NA") %>%
+  filter(l3agbiomfrac != "NaN") %>%
+  filter(SimulationType == "Only C3 grass allowed") %>%
+  filter(plai > 0) %>%
+  mutate(agbiom = agbiom/0.45) %>%
+  mutate(Management = recode(Management, "2-Day Rotation" = "Rotational Grazing"))
+
+FF_daily_C3_ung <- FF_daily_C3 %>%
+  filter(Management == "Ungrazed")
+FF_daily_C3_rot2 <- FF_daily_C3 %>%
+  filter(Management == "Rotational Grazing")
+FF_daily_C3_cont <- FF_daily_C3 %>%
+  filter(Management == "Continuous Grazing")
+
+# Simulation data - 2006-2007 dates tailored to real grazing dates (Oates)
+FF_daily_C3_oates <- FF_daily_oates %>%
+  filter(Location == "FF") %>%
+#  filter(Date >= '2006-01-01' & Date <= '2008-01-01') %>%
+  filter(Date >= '2006-04-26' & Date <= '2007-11-12') %>%
+  dplyr::select(Date,Location,PFT,SimulationType,Management,plai,agbiom,grazedbiom,l3agbiomfrac) %>%
+  filter(agbiom != "NA") %>%
+  filter(l3agbiomfrac != "NaN") %>%
+  filter(SimulationType == "Only C3 grass allowed") %>%
+  filter(plai > 0) %>%
+  mutate(agbiom = agbiom/0.45) %>%
+  mutate(Management = recode(Management, "2-Day Rotation" = "Rotational Grazing"))
+FF_daily_C3_ung_oates <- FF_daily_C3_oates %>%
+  filter(Management == "Ungrazed")
+FF_daily_C3_rot2_oates <- FF_daily_C3_oates %>%
+  filter(Management == "Rotational Grazing")
+FF_daily_C3_cont_oates <- FF_daily_C3_oates %>%
+  filter(Management == "Continuous Grazing")
+
+
+# Validation data
+FF_val_recoded <- FF_val %>%
+  mutate(agbiom = g.m2 / 1000) %>%
+  rename(Date = date)
+FF_val_recoded_ung <- FF_val_recoded %>%
+  filter(treatment == "NONE") %>%
+  mutate(treatment = recode(treatment, "NONE" = "Ungrazed")) %>%
+  group_by(Date) %>%
+  mutate(mean_agbiom = mean(agbiom)) %>%
+  mutate(SE_agbiom = calcSE(agbiom)) %>%
+  mutate(mean_lai = mean(`final LAI`)) %>%
+  mutate(SE_lai = calcSE(`final LAI`))
+FF_val_recoded_rot2 <- FF_val_recoded %>%
+  filter(treatment == "MIRG") %>%
+  mutate(treatment = recode(treatment, "MIRG" = "Rotational Grazing")) %>%
+  group_by(Date) %>%
+  mutate(mean_agbiom = mean(agbiom)) %>%
+  mutate(SE_agbiom = calcSE(agbiom)) %>%
+  mutate(mean_lai = mean(`final LAI`)) %>%
+  mutate(SE_lai = calcSE(`final LAI`))
+FF_val_recoded_cont <- FF_val_recoded %>%
+  filter(treatment == "CONT") %>%
+  mutate(treatment = recode(treatment, "CONT" = "Continuous Grazing")) %>%
+  group_by(Date) %>%
+  mutate(mean_agbiom = mean(agbiom)) %>%
+  mutate(SE_agbiom = calcSE(agbiom)) %>%
+  mutate(mean_lai = mean(`final LAI`)) %>%
+  mutate(SE_lai = calcSE(`final LAI`))
+FF_val_recoded_recombined_all <- rbind(FF_val_recoded_ung, FF_val_recoded_rot2, FF_val_recoded_cont)
+FF_val_recoded_recombined <- FF_val_recoded_recombined_all %>%
+  distinct(Date, treatment, mean_agbiom, SE_agbiom, mean_lai, SE_lai) %>%
+  mutate("Simulation/Observed" = "Observed")
+
+
+### Validation - Simulation: Only C3 grasses allowed
+## R2, MBE, RMSE
+# Management : Ungrazed
+FF_val_recoded_ung_distinct <- FF_val_recoded_ung %>%
+  distinct(Date,mean_agbiom,mean_lai,treatment)
+FF_daily_C3_ung_obssim <- merge(FF_val_recoded_ung_distinct, FF_daily_C3_ung, by="Date")
+tdStats(m=FF_daily_C3_ung_obssim$plai, o=FF_daily_C3_ung_obssim$mean_lai, functions=c("r2","mbe","rmse"))
+tdStats(m=FF_daily_C3_ung_obssim$agbiom, o=FF_daily_C3_ung_obssim$mean_agbiom, functions=c("r2","mbe","rmse"))
+
+#Rotational - Generalized
+FF_val_recoded_rot2_distinct <- FF_val_recoded_rot2 %>%
+  distinct(Date,mean_agbiom,mean_lai,treatment)
+FF_daily_C3_rot2_obssim <- merge(FF_val_recoded_rot2_distinct, FF_daily_C3_rot2, by="Date")
+tdStats(m=FF_daily_C3_rot2_obssim$plai, o=FF_daily_C3_rot2_obssim$mean_lai, functions=c("r2","mbe","rmse"))
+tdStats(m=FF_daily_C3_rot2_obssim$agbiom, o=FF_daily_C3_rot2_obssim$mean_agbiom, functions=c("r2","mbe","rmse"))
+
+#Rotational - Date-Aligned
+FF_val_recoded_rot2_distinct <- FF_val_recoded_rot2 %>%
+  distinct(Date,mean_agbiom,mean_lai,treatment)
+FF_daily_C3_rot2_obssim_oates <- merge(FF_val_recoded_rot2_distinct, FF_daily_C3_rot2_oates, by="Date")
+tdStats(m=FF_daily_C3_rot2_obssim_oates$plai, o=FF_daily_C3_rot2_obssim_oates$mean_lai, functions=c("r2","mbe","rmse"))
+tdStats(m=FF_daily_C3_rot2_obssim_oates$agbiom, o=FF_daily_C3_rot2_obssim_oates$mean_agbiom, functions=c("r2","mbe","rmse"))
+
+#Continuous
+FF_val_recoded_cont_distinct <- FF_val_recoded_cont %>%
+  distinct(Date,mean_agbiom,mean_lai,treatment)
+FF_daily_C3_cont_obssim <- merge(FF_val_recoded_cont_distinct, FF_daily_C3_cont, by="Date")
+tdStats(m=FF_daily_C3_cont_obssim$plai, o=FF_daily_C3_cont_obssim$mean_lai, functions=c("r2","mbe","rmse"))
+tdStats(m=FF_daily_C3_cont_obssim$agbiom, o=FF_daily_C3_cont_obssim$mean_agbiom, functions=c("r2","mbe","rmse"))
+```
+
+```{r}
+### M.S. thesis graphs and regressions
+
+# Franbrook Farm map
+wisconsin <- map_data("state", "wisconsin")
+wisconsin_map <- ggplot(wisconsin, aes(x = long, y = lat, group = group)) + geom_polygon(fill = "white", color = "black")
+map <- get_map(location =  c(lon = -89.75369, lat = 42.73796), zoom = 12)
+map_plot <- ggmap(map)
+wisconsin_map +
+  map_plot +
+  geom_point(aes(x = -89.75369, y = 42.73796), size = 5, color = "red")
+
+## FF map
+# Create a map of Wisconsin
+map("state", "wisconsin", fill = TRUE, col = "lightgray", lwd = 0.2)
+# Add a red point to mark the location - Franbrook Farm
+points(-89.75369, 42.73796, col = "red", pch = 19, cex = 2)
+# Add a label to the map for Franbrook Farm
+text(-89.75369, 42.73796, "Franbrook Farm", col = "black", cex = 0.8, pos = 4)
+points(-89.4042, 43.0753, col = "red", pch = 19, cex = 2)
+text(-89.4042, 43.0753, "UW-Madison", col = "black", cex = 0.8, pos = 4)
+
+## UW-Madison map
+# Create a map of Wisconsin
+map("state", "wisconsin", fill = TRUE, col = "lightgray", lwd = 0.2, boundary="lakes")
+# Add a red point to mark the location - Franbrook Farm
+points(-89.4042, 43.0753, col = "red", pch = 19, cex = 2)W
+# Add a label to the map for UW-Madison
+text(-89.4042, 43.0753, "UW-Madison", col = "black", cex = 0.8, pos = 4)
+
+## Map of FF and UW-Madison
+wi_map <- map_data("state", region = "wisconsin")
+
+pdf(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Map_FF_UW.pdf")
+ggplot() + 
+  geom_polygon(data = wi_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "gray") + 
+  geom_point(aes(x = -89.75369, y = 42.73796), color = "#009E73", size = 8) + 
+  geom_text(aes(x = -89.75369, y = 42.73796, label = "Franbrook Farm"), color = "black", size = 6, hjust = 1.1, vjust = 1.1) +
+  geom_point(aes(x = -89.4042, y = 43.0753), color = "red", size = 8) +
+  geom_text(aes(x = -89.4042, y = 43.0753, label = "UW-Madison"), color = "black", size = 6, hjust = -0.1, vjust = -0.1) +
+  theme_void()
+
+pdf(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Map_UW.pdf")
+ggplot() + 
+  geom_polygon(data = wi_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "gray") + 
+  geom_point(aes(x = -89.4042, y = 43.0753), color = "red", size = 8) +
+  geom_text(aes(x = -89.4042, y = 43.0753, label = "UW-Madison"), color = "black", size = 6, hjust = -0.1, vjust = -0.1) +
+  theme_void()
+
+pdf(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Map_FF.pdf")
+ggplot() + 
+  geom_polygon(data = wi_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "gray") + 
+  geom_point(aes(x = -89.75369, y = 42.73796), color = "#009E73", size = 8) + 
+  geom_text(aes(x = -89.75369, y = 42.73796, label = "Franbrook Farm"), color = "black", size = 6, hjust = 1.1, vjust = 1.1) +
+  theme_void()
+
+map("state", "wisconsin", fill = TRUE, col = "lightgray", lwd = 0.2)
+points(-89.75369, 42.73796, col = "#009E73", pch = 19, cex = 2)
+text(-89.75369, 42.73796, "Franbrook Farm", col = "black", cex = 0.8, pos = 4)
+points(-89.4042, 43.0753, col = "red", pch = 19, cex = 2)
+text(-89.4042, 43.0753, "UW-Madison", col = "black", cex = 0.8, pos = 4)
+
+
+# Graph of different biomass pools
+FF_biomass_pools <- FF_daily %>%
+  filter(Date >= '2006-04-26' & Date <= '2007-11-12') %>%
+  mutate(Leaf = cbiol/biomass) %>%
+  mutate(Stem = cbios/biomass) %>%
+  mutate(Reproductive = cbiog/biomass) %>%
+  mutate(Root = cbior/biomass) %>%
+  mutate(Management = recode(Management, "2-Day Rotation" = "Rotational Grazing")) %>%
+  dplyr::select(Leaf,Stem,Reproductive,Root,Date,Management) %>%
+  melt(value.name='Ratio', id=c('Management','Date')) %>%
+  rename(Pool = variable)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Biomass_Partitioning_FF_Graph.tiff", units="in", height=5, width=10, res=300)
+ggplot(data=FF_biomass_pools, aes(x=Date,y=Ratio)) + geom_line(aes(col=Pool)) +
+  xlab("Date") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA)) +
+  ylab("Ratio of Biomass Pool to Total Biomass") + facet_wrap(~Management) + 
+  scale_color_manual(values=c("Leaf"="#009E73","Stem"="#0072B2","Root"="#E69F00","Reproductive"="#CC79A7"),
+                     breaks=c("Root", "Leaf", "Stem", "Reproductive")) +
+  scale_x_date(date_labels = "%b %Y", date_breaks = "4 months")
+
+# Graphs of LAI across different grazing management regimes at FF
+min(FF_val_recoded_recombined$date)
+max(FF_val_recoded_recombined$date)
+
+# Graph of simulated vs. observed LAI for C3
+FF_val_recoded_recombined_renamed <- FF_val_recoded_recombined_all %>%
+  rename(plai = `final LAI`) %>%
+  rename(Management = treatment)
+
+### Generalized vs. Oates vs. Obs LAI
+FF_val_recoded_recombined_renamed_rot2 <- FF_val_recoded_recombined_all %>%
+  rename(plai = `final LAI`) %>%
+  rename(Management = treatment) %>%
+  filter(Management == "Rotational Grazing")
+
+### Attempt at new Oates vs. Date-Aligned vs. Generalized Model graph - used lines from legend to update the original figure in powerpoint
+# LAI - Rotational Grazing
+gen_date_obs_lai <- ggplot() + 
+  geom_boxplot(data=FF_val_recoded_recombined_renamed_rot2, width=8, aes(x=Date, y=plai, group=Date, col="Evaluation Data")) +
+  geom_line(data=FF_daily_C3_rot2, aes(x=Date, y=plai, col="Generalized Model")) +
+  geom_line(data=FF_daily_C3_rot2_oates, aes(x=Date, y=plai, col="Date-Aligned Model")) +
+  ggtitle("Leaf Area Index") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.position = "none") +
+  ylab(expression("Daily Leaf Area Index (m"^"2"*" m"^-2*")")) + 
+  xlab("Date") + 
+  scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_colour_manual(name="Data Source", values=c("Generalized Model"="#009E73","Date-Aligned Model"="#E69F00", "Evaluation Data"="#000000"))
+
+# Aboveground Biomass - Rotational Grazing
+gen_date_obs_agbiom <- ggplot() + 
+  geom_boxplot(data=FF_val_recoded_recombined_renamed_rot2, width=8, aes(x=Date, y=agbiom, group=Date, col="Evaluation Data")) +
+  geom_line(data=FF_daily_C3_rot2, aes(x=Date, y=agbiom, col="Generalized Model")) +
+  geom_line(data=FF_daily_C3_rot2_oates, aes(x=Date, y=agbiom, col="Date-Aligned Model")) +
+  ggtitle("Aboveground Biomass") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.position = "none") +
+  ylab(expression("Aboveground Biomass (kg m"^-2*")")) + 
+  xlab("Date") + 
+  scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_colour_manual(name="Data Source", values=c("Generalized Model"="#009E73","Date-Aligned Model"="#E69F00", "Evaluation Data"="#000000"))
+
+# Custom legend
+legend_data <- data.frame(
+  x = c(1, 2, 3),
+  y = c(1, 1, 1),
+  label = factor(c("Generalized Model", "Date-Aligned Model", "Evaluation Data"), 
+                 levels = c("Generalized Model", "Date-Aligned Model", "Evaluation Data"))
+)
+
+custom_legend <- ggplot(legend_data, aes(x, y, color = label)) +
+  geom_line(aes(linetype = label), linewidth = 1, show.legend = TRUE) +
+  geom_point(aes(shape = label), size = 3, show.legend = TRUE) +
+  scale_color_manual(values = c("Generalized Model"="#009E73", "Date-Aligned Model"="#E69F00", "Evaluation Data"="#000000")) +
+  scale_linetype_manual(values = c("Generalized Model"=1, "Date-Aligned Model"=1, "Evaluation Data"=0)) +
+  scale_shape_manual(values = c("Generalized Model"=NA, "Date-Aligned Model"=NA, "Evaluation Data"=16)) +
+  theme_void() +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(title = "Data Source", 
+                              override.aes = list(
+                                linetype = c(1, 1, 0),
+                                shape = c(NA, NA, 16)
+                              )))
+
+# Extract the legend
+legend <- get_legend(custom_legend)
+
+# Combine plots and custom legend
+combined_plot <- ggarrange(gen_date_obs_lai, gen_date_obs_agbiom, ncol = 2, labels = c("A", "B"))
+final_plot <- arrangeGrob(combined_plot, legend, ncol = 1, heights = c(10, 1))
+
+# Save the final plot
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Gen_vs_Date_vs_Obs_LAI_agbiom_FF.tiff", units="in", height=5, width=11, res=300)
+grid.draw(final_plot)
+dev.off()
+
+# Original
+# Boxplot
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Gen_vs_Oates_vs_Obs_LAI_box_FF.tiff", units="in", height=5, width=9, res=300)
+gen_date_obs_lai <- ggplot() + geom_boxplot(data=FF_val_recoded_recombined_renamed_rot2,width=8,aes(x=Date,y=plai,group=Date,col="Evaluation Data")) +
+  geom_line(data=FF_daily_C3_rot2, aes(x=Date, y=plai, col="Generalized Model")) +
+  geom_line(data=FF_daily_C3_rot2_oates, aes(x=Date, y=plai, col="Date-Aligned Model")) +
+  ggtitle("Leaf Area Index") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA)) +
+  ylab(expression("Daily Leaf Area Index (m"^"2"*" m"^-2*")")) + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(name="Data Source", values=c("Evaluation Data"="#000000","Generalized Model"="#009E73","Date-Aligned Model"="#E69F00"), limits=c("Generalized Model","Date-Aligned Model","Evaluation Data"))
+### Generalized vs. Oates vs. Obs Aboveground Biomass
+# Boxplot
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Gen_vs_Oates_vs_Obs_agbiom_box_FF.tiff", units="in", height=5, width=9, res=300)
+gen_date_obs_agbiom <- ggplot() + geom_boxplot(data=FF_val_recoded_recombined_renamed_rot2,width=8,aes(x=Date,y=agbiom,group=Date,col="Evaluation Data")) +
+  geom_line(data=FF_daily_C3_rot2, aes(x=Date, y=agbiom, col="Generalized Model")) +
+  geom_line(data=FF_daily_C3_rot2_oates, aes(x=Date, y=agbiom, col="Date-Aligned Model")) +
+  ggtitle("Aboveground Biomass") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA)) +
+  ylab(expression("Aboveground Biomass (kg m"^-2*")")) + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(name="Data Source", values=c("Evaluation Data"="#000000","Generalized Model"="#009E73","Date-Aligned Model"="#E69F00"), limits=c("Generalized Model","Date-Aligned Model","Evaluation Data"))
+### Generalized vs. Date-aligned vs. Obs combined
+combined_plot <- ggarrange(gen_date_obs_lai, gen_date_obs_agbiom, common.legend = TRUE, legend = "bottom", labels = c("A", "B"))
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Gen_vs_Date_vs_Obs_LAI_agbiom_FF.tiff", units="in", height=5, width=11, res=300)
+combined_plot + theme(plot.margin = margin(t = 1, r = 1, b = 0.5, l = 1, "lines"))
+
+
+### Graphs of simulated vs. observed LAI for C3
+# Line graphs vs. boxplots
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Sim_vs_Obs_LAI_box_FF.tiff", units="in", height=8, width=11, res=300)
+lai_simvsobs_graph <- ggplot() + geom_boxplot(data=FF_val_recoded_recombined_renamed,width=8,aes(x=Date,y=plai,group=Date,col=Management)) +
+  geom_line(data=FF_daily_C3, aes(x=Date, y=plai, col=Management)) +
+  ggtitle("Leaf Area Index") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA)) +
+  ylab(expression("Daily Leaf Area Index (m"^"2"*" m"^-2*")")) + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) + facet_wrap(~Management, ncol=1) +
+  scale_color_manual(values=c("Rotational Grazing"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+### Graphs of simulated vs. observed agbiom for C3
+# Line graphs vs. boxplots
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Sim_vs_Obs_agbiom_box_FF.tiff", units="in", height=8, width=13, res=300)
+agbiom_simvsobs_graph <- ggplot() + geom_boxplot(data=FF_val_recoded_recombined_renamed,width=8,aes(x=Date,y=agbiom,group=Date,col=Management)) +
+  geom_line(data=FF_daily_C3, aes(x=Date, y=agbiom, col=Management)) +
+  ggtitle("Aboveground Biomass") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA)) +
+  ylab(expression("Aboveground Biomass (kg m"^-2*")")) + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) + facet_wrap(~Management, ncol=1) +
+  scale_color_manual(values=c("Rotational Grazing"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+# Combined graphs of simulated vs. observed LAI and aboveground biomass and for C3
+combined_plot <- ggarrange(lai_simvsobs_graph, agbiom_simvsobs_graph, common.legend = TRUE, legend="bottom", labels=c("A","B"), ncol=2)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Sim_vs_Obs_LAI_agbiom_FF.tiff", units="in", height=8, width=10, res=300)
+combined_plot + theme(plot.margin = margin(t = 1, r = 1, b = 0.5, l = 1, "lines"))
+
+
+### Graphs of observed LAI for C3
+# Boxplots
+FF_val_ung <- FF_val_recoded_recombined_renamed %>%
+  filter(Management == "Ungrazed")
+FF_val_rot2 <- FF_val_recoded_recombined_renamed %>%
+  filter(Management == "Rotational Grazing")
+FF_val_cont <- FF_val_recoded_recombined_renamed %>%
+  filter(Management == "Continuous Grazing")
+
+# UNG LAI - Observed
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_LAI_UNG_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_ung,width=8,aes(x=Date,y=plai,group=Date,col=Management)) +
+  ggtitle("Observed LAI for Ungrazed") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("Ungrazed"="#56B4E9"))
+# UNG LAI - Observed vs. Simulated
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_Sim_LAI_UNG_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_ung,width=8,aes(x=Date,y=plai,group=Date,col=Management)) +
+  geom_line(data=FF_daily_C3_ung, aes(x=Date, y=plai, col=Management)) +
+  ggtitle("Simulated vs. Observed LAI for Ungrazed") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("Ungrazed"="#56B4E9"))
+# UNG agbiom - Observed
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_agbiom_UNG_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_ung,width=8,aes(x=Date,y=agbiom,group=Date,col=Management)) +
+  ggtitle("Observed Aboveground Biomass for Ungrazed") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Aboveground Biomass (kg m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("Ungrazed"="#56B4E9"))
+# UNG agbiom - Observed vs. Simulated
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_Sim_agbiom_UNG_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_ung,width=8,aes(x=Date,y=agbiom,group=Date,col=Management)) +
+  geom_line(data=FF_daily_C3_ung, aes(x=Date, y=agbiom, col=Management)) +
+  ggtitle("Simulated vs. Observed Aboveground Biomass for Ungrazed") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Aboveground Biomass (kg m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("Ungrazed"="#56B4E9"))
+
+# CONT LAI - Observed
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_LAI_CONT_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_cont,width=8,aes(x=Date,y=plai,group=Date,col=Management)) +
+  ggtitle("Observed LAI for Continuous") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("Continuous Grazing"="#D55E00"))
+# CONT LAI - Observed vs. Simulated
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_Sim_LAI_CONT_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_cont,width=8,aes(x=Date,y=plai,group=Date,col=Management)) +
+  geom_line(data=FF_daily_C3_cont, aes(x=Date, y=plai, col=Management)) +
+  ggtitle("Simulated vs. Observed LAI for Continuous") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("Continuous Grazing"="#D55E00"))
+# CONT agbiom - Observed
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_agbiom_CONT_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_cont,width=8,aes(x=Date,y=agbiom,group=Date,col=Management)) +
+  ggtitle("Observed Aboveground Biomass for Continuous") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Aboveground Biomass (kg m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("Continuous Grazing"="#D55E00"))
+# CONT agbiom - Observed vs. Simulated
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_Sim_agbiom_CONT_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_cont,width=8,aes(x=Date,y=agbiom,group=Date,col=Management)) +
+  geom_line(data=FF_daily_C3_cont, aes(x=Date, y=agbiom, col=Management)) +
+  ggtitle("Simulated vs. Observed Aboveground Biomass for Continuous") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Aboveground Biomass (kg m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("Continuous Grazing"="#D55E00"))
+
+# ROT2 LAI - Observed
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_LAI_ROT2_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_rot2,width=8,aes(x=Date,y=plai,group=Date,col=Management)) +
+  ggtitle("Observed LAI for 2-Day Rotation") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73"))
+# ROT2 LAI - Observed vs. Simulated
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_Sim_LAI_ROT2_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_rot2,width=8,aes(x=Date,y=plai,group=Date,col=Management)) +
+  geom_line(data=FF_daily_C3_rot2, aes(x=Date, y=plai, col=Management)) +
+  ggtitle("Simulated vs. Observed LAI for 2-Day Rotation") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73"))
+# ROT2 agbiom - Observed
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_agbiom_ROT2_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_rot2,width=8,aes(x=Date,y=agbiom,group=Date,col="Management")) +
+  ggtitle("Observed Aboveground Biomass for 2-Day Rotation") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Aboveground Biomass (kg m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73"))
+# ROT2 agbiom - Observed vs. Simulated
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_Sim_agbiom_ROT2_box_FF.tiff", units="in", height=4, width=7, res=300)
+ggplot() + # geom_boxplot(data=FF_val_rot2,width=8,aes(x=Date,y=agbiom,group=Date,col="Management")) +
+  geom_line(data=FF_daily_C3_rot2, aes(x=Date, y=agbiom, col=Management)) +
+  ggtitle("Simulated vs. Observed Aboveground Biomass for 2-Day Rotation") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Aboveground Biomass (kg m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("2-Day Rotation - Simulated"="#009E73"))
+
+# Gen vs Obs
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Gen_vs_Oates_vs_Obs_agbiom_presentation.tiff", units="in", height=4, width=7, res=300)
+ggplot() + geom_boxplot(data=FF_val_recoded_recombined_renamed_rot2,width=8,aes(x=Date,y=agbiom,group=Date,col="Evaluation Data")) +
+  geom_line(data=FF_daily_C3_rot2, aes(x=Date, y=agbiom, col="Generalized Model")) +
+  geom_line(data=FF_daily_C3_rot2_oates, aes(x=Date, y=agbiom, col="Date-Aligned Model")) +
+  ggtitle("Generalized vs. Observed 2-Day Rotation - Aboveground Biomass") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(name="Data Source", values=c("Evaluation Data"="#000000","Generalized Model"="#009E73","Date-Aligned Model"="#E69F00"))
+
+# Grazed biomass t-test
+FF_daily_C3_grazed <- FF_daily %>%
+  filter(Location == "FF") %>%
+  filter(Date >= '1979-01-01') %>%
+#  filter(Date >= '2006-04-26' & Date <= '2007-11-12') %>%
+  dplyr::select(Date,Location,PFT,SimulationType,Management,plai,agbiom,grazedbiom,l3agbiomfrac,panpp,pbnpp) %>%
+  filter(agbiom != "NA") %>%
+  filter(l3agbiomfrac != "NaN") %>%
+  filter(SimulationType == "Only C3 grass allowed") %>%
+  filter(plai > 0) %>%
+  mutate(agbiom = agbiom/0.45) %>%
+  mutate(grazedbiom = grazedbiom/0.45) %>%
+  mutate(panpp = panpp/0.45) %>%
+  mutate(pbnpp = pbnpp/0.45) %>%
+  mutate(ptnpp = panpp + pbnpp) %>%
+  filter(Management != "Ungrazed")
+t.test(data=FF_daily_C3_grazed, grazedbiom ~ Management) # Not significant from 2006-2006, is significant using whole timeframe (0.386 vs. 0.355)
+t.test(data=FF_daily_C3_grazed, agbiom ~ Management) # Is significantly higher in rotation over whole time (0.211 vs. 0.151 kg m-2 (P<0.001))
+t.test(data=FF_daily_C3_grazed, panpp ~ Management)
+
+
+
+
+# Post validation/evaluation graphs
+# Graph of yearly NPP comparisons for different grass types
+FF_yearly <- read_csv("FF_yearly.csv")
+FF_yearly_NPP <- FF_yearly %>%
+  filter(Year >= 1979) %>%
+  mutate(npptot = npptot/(0.45)) %>%
+  mutate(anpptot = anpptot/(0.45))
+
+# Calculating maximum LAI for each year
+FF_daily_max_LAI <- FF_daily %>%
+  filter(Date >= '1979-01-01') %>%
+  dplyr::select(Date,Management,plai) %>%
+  mutate(Year = lubridate::floor_date(Date, "year")) %>%
+  mutate(Year = sub("^(\\d{4}).*$", "\\1", Year)) %>%
+  group_by(Year, Management) %>%
+  mutate(max_LAI = max(plai)) %>%
+  distinct(Management,Year,max_LAI) %>%
+  mutate(Year = as.double(Year))
+
+# Creating separate dataframes based on management
+FF_yearly_NPP_max_LAI <- FF_yearly_NPP %>%
+  left_join(FF_daily_max_LAI, FF_yearly_NPP, by=c("Year","Management")) %>%
+  mutate(anpp_npp_ratio = anpptot/npptot) %>%
+  mutate(wue = anpptot/aet_y)
+FF_yearly_NPP_ung <- FF_yearly_NPP_max_LAI %>%
+  filter(Management == "Ungrazed")
+FF_yearly_NPP_rot2 <- FF_yearly_NPP_max_LAI %>%
+  filter(Management == "2-Day Rotation")
+FF_yearly_NPP_cont <- FF_yearly_NPP_max_LAI %>%
+  filter(Management == "Continuous Grazing")
+
+### Stats for paper
+max(FF_daily_C3_ung_obssim$mean_lai)
+max(FF_daily_C3_rot2_obssim$mean_lai)
+max(FF_daily_C3_cont_obssim$mean_lai)
+view(FF_daily_C3_ung_obssim)
+FF_daily_oates_stats_rot2 <- FF_daily_oates %>%
+  filter(Location == "FF") %>%
+  filter(Date >= '2006-01-01' & Date <= '2008-01-01') %>%
+  mutate(agbiom = agbiom/0.45) %>%
+  filter(Management == "2-Day Rotation")
+max(FF_daily_oates_stats_rot2$plai)
+FF_yearly_oates <- read_csv("FF_yearly_oates.csv")
+FF_yearly_NPP_oates <- FF_yearly_oates %>%
+  filter(Year >= 1979) %>%
+  mutate(npptot = npptot/(0.45)) %>%
+  mutate(anpptot = anpptot/(0.45))
+FF_daily_max_LAI_oates <- FF_daily_oates %>%
+  filter(Date >= '1979-01-01') %>%
+  dplyr::select(Date,Management,plai) %>%
+  mutate(Year = lubridate::floor_date(Date, "year")) %>%
+  mutate(Year = sub("^(\\d{4}).*$", "\\1", Year)) %>%
+  group_by(Year, Management) %>%
+  mutate(max_LAI = max(plai)) %>%
+  distinct(Management,Year,max_LAI) %>%
+  mutate(Year = as.double(Year))
+FF_yearly_NPP_max_LAI_oates <- FF_yearly_NPP_oates %>%
+  left_join(FF_daily_max_LAI_oates, FF_yearly_NPP_oates, by=c("Year","Management")) %>%
+  mutate(anpp_npp_ratio = anpptot/npptot) %>%
+  mutate(wue = anpptot/aet_y) %>%
+  filter(Year > 2005) %>%
+  filter(Year < 2008) %>%
+  dplyr::select(Year, anpptot, npptot, Management, max_LAI)
+
+FF_yearly_NPP_max_LAI_notoates <- FF_yearly_NPP_max_LAI %>%
+  filter(Year > 2005) %>%
+  filter(Year < 2008) %>%
+  dplyr::select(Year, anpptot, npptot, Management, max_LAI)
+view(FF_yearly_NPP_max_LAI_oates)
+view(FF_yearly_NPP_max_LAI_notoates)
+
+
+## Gathering means/SDs for each variable across management options
+# Max LAI
+mean(FF_yearly_NPP_ung$max_LAI)
+sd(FF_yearly_NPP_ung$max_LAI)
+mean(FF_yearly_NPP_rot2$max_LAI)
+sd(FF_yearly_NPP_rot2$max_LAI)
+mean(FF_yearly_NPP_cont$max_LAI)
+sd(FF_yearly_NPP_cont$max_LAI)
+# ANPP
+mean(FF_yearly_NPP_ung$anpptot)
+sd(FF_yearly_NPP_ung$anpptot)
+mean(FF_yearly_NPP_rot2$anpptot)
+sd(FF_yearly_NPP_rot2$anpptot)
+mean(FF_yearly_NPP_cont$anpptot)
+sd(FF_yearly_NPP_cont$anpptot)
+# NPP
+mean(FF_yearly_NPP_ung$npptot)
+sd(FF_yearly_NPP_ung$npptot)
+mean(FF_yearly_NPP_rot2$npptot)
+sd(FF_yearly_NPP_rot2$npptot)
+mean(FF_yearly_NPP_cont$npptot)
+sd(FF_yearly_NPP_cont$npptot)
+# ANPP:NPP
+mean(FF_yearly_NPP_ung$anpp_npp_ratio)
+sd(FF_yearly_NPP_ung$anpp_npp_ratio)
+mean(FF_yearly_NPP_rot2$anpp_npp_ratio)
+sd(FF_yearly_NPP_rot2$anpp_npp_ratio)
+mean(FF_yearly_NPP_cont$anpp_npp_ratio)
+sd(FF_yearly_NPP_cont$anpp_npp_ratio)
+# ET
+mean(FF_yearly_NPP_ung$aet_y)
+sd(FF_yearly_NPP_ung$aet_y)
+mean(FF_yearly_NPP_rot2$aet_y)
+sd(FF_yearly_NPP_rot2$aet_y)
+mean(FF_yearly_NPP_cont$aet_y)
+sd(FF_yearly_NPP_cont$aet_y)
+# WUE
+mean(FF_yearly_NPP_ung$wue)
+sd(FF_yearly_NPP_ung$wue)
+mean(FF_yearly_NPP_rot2$wue)
+sd(FF_yearly_NPP_rot2$wue)
+mean(FF_yearly_NPP_cont$wue)
+sd(FF_yearly_NPP_cont$wue)
+
+## Regressions
+reg_ung_max_LAI <- lm(data=FF_yearly_NPP_ung, max_LAI ~ Year)
+summary(reg_ung_max_LAI)
+reg_rot2_max_LAI <- lm(data=FF_yearly_NPP_rot2, max_LAI ~ Year)
+summary(reg_rot2_max_LAI)
+reg_cont_max_LAI <- lm(data=FF_yearly_NPP_cont, max_LAI ~ Year)
+summary(reg_cont_max_LAI)
+
+reg_ung_anpptot <- lm(data=FF_yearly_NPP_ung, anpptot ~ Year)
+summary(reg_ung_anpptot)
+reg_rot2_anpptot <- lm(data=FF_yearly_NPP_rot2, anpptot ~ Year)
+summary(reg_rot2_anpptot)
+reg_cont_anpptot <- lm(data=FF_yearly_NPP_cont, anpptot ~ Year)
+summary(reg_cont_anpptot)
+
+reg_ung_npptot <- lm(data=FF_yearly_NPP_ung, npptot ~ Year)
+summary(reg_ung_npptot)
+reg_rot2_npptot <- lm(data=FF_yearly_NPP_rot2, npptot ~ Year)
+summary(reg_rot2_npptot)
+reg_cont_npptot <- lm(data=FF_yearly_NPP_cont, npptot ~ Year)
+summary(reg_cont_npptot)
+
+reg_ung_anpp_npp_ratio <- lm(data=FF_yearly_NPP_ung, anpp_npp_ratio ~ Year)
+summary(reg_ung_anpp_npp_ratio)
+reg_rot2_anpp_npp_ratio <- lm(data=FF_yearly_NPP_rot2, anpp_npp_ratio ~ Year)
+summary(reg_rot2_anpp_npp_ratio)
+reg_cont_anpp_npp_ratio <- lm(data=FF_yearly_NPP_cont, anpp_npp_ratio ~ Year)
+summary(reg_cont_anpp_npp_ratio)
+
+reg_ung_aet_y <- lm(data=FF_yearly_NPP_ung, aet_y ~ Year)
+summary(reg_ung_aet_y)
+reg_rot2_aet_y <- lm(data=FF_yearly_NPP_rot2, aet_y ~ Year)
+summary(reg_rot2_aet_y)
+reg_cont_aet_y <- lm(data=FF_yearly_NPP_cont, aet_y ~ Year)
+summary(reg_cont_aet_y)
+
+reg_ung_wue <- lm(data=FF_yearly_NPP_ung, wue ~ Year)
+summary(reg_ung_wue)
+reg_rot2_wue <- lm(data=FF_yearly_NPP_rot2, wue ~ Year)
+summary(reg_rot2_wue)
+reg_cont_wue <- lm(data=FF_yearly_NPP_cont, wue ~ Year)
+summary(reg_cont_wue)
+
+
+## ANOVAs/Tukey's tests
+aov_max_LAI <- aov(data=FF_yearly_NPP_max_LAI, max_LAI ~ Management)
+summary(aov_max_LAI)
+TukeyHSD(aov_max_LAI)
+
+aov_anpptot <- aov(data=FF_yearly_NPP_max_LAI, anpptot ~ Management)
+summary(aov_anpptot)
+TukeyHSD(aov_anpptot)
+
+aov_npptot <- aov(data=FF_yearly_NPP_max_LAI, npptot ~ Management)
+summary(aov_npptot)
+TukeyHSD(aov_npptot)
+
+aov_anpp_npp_ratio <- aov(data=FF_yearly_NPP_max_LAI, anpp_npp_ratio ~ Management)
+summary(aov_anpp_npp_ratio)
+TukeyHSD(aov_anpp_npp_ratio)
+
+aov_aet_y <- aov(data=FF_yearly_NPP_max_LAI, aet_y ~ Management)
+summary(aov_aet_y)
+TukeyHSD(aov_aet_y)
+
+aov_wue <- aov(data=FF_yearly_NPP_max_LAI, wue ~ Management)
+summary(aov_wue)
+TukeyHSD(aov_wue)
+
+mean(FF_yearly_NPP_ung$gsdays)
+
+view(FF_yearly_NPP_max_LAI)
+### Annual variable graph
+# ANPPtot graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/ANPPtot_graph.tiff", units="in", height=5, width=10, res=300)
+anpp_y <- ggplot(data=FF_yearly_NPP_max_LAI, aes(x=Year,y=anpptot)) + geom_line(aes(col=Management)) +
+  geom_smooth(method=lm, se=FALSE, linetype="dashed", aes(col=Management)) + ggtitle("Simulated ANPP") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab(expression("Annual ANPP (kg m"^-2*")")) + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+# NPPtot graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/NPPtot_graph.tiff", units="in", height=5, width=10, res=300)
+npp_y <- ggplot(data=FF_yearly_NPP_max_LAI, aes(x=Year,y=npptot)) + geom_line(aes(col=Management)) +
+  geom_smooth(method=lm, se=FALSE, linetype="dashed", aes(col=Management)) + ggtitle("Simulated Total NPP") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab(expression("Total Annual NPP (kg m"^-2*")")) + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+# Annual anpp_npp_ratio graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/anpp_npp_ratio_graph.tiff", units="in", height=5, width=10, res=300)
+anpp_npp_ratio_y <- ggplot(data=FF_yearly_NPP_max_LAI, aes(x=Year,y=anpp_npp_ratio)) + geom_line(aes(col=Management)) +
+  geom_smooth(method=lm, se=FALSE, linetype="dashed", aes(col=Management)) + ggtitle("Simulated ANPP:NPP") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab("Annual ANPP:NPP") + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+# Annual max LAI graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/max_LAI_graph.tiff", units="in", height=5, width=10, res=300)
+max_lai_y <- ggplot(data=FF_yearly_NPP_max_LAI, aes(x=Year,y=max_LAI)) + geom_line(aes(col=Management)) +
+  geom_smooth(method=lm, se=FALSE, linetype="dashed", aes(col=Management)) + ggtitle("Simulated Maximum LAI") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab(expression("Annual Maximum LAI (m"^"2"*" m"^-2*")")) + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+# Annual evapotranspiration graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/aet_graph.tiff", units="in", height=5, width=10, res=300)
+et_y <- ggplot(data=FF_yearly_NPP_max_LAI, aes(x=Year,y=aet_y)) + geom_line(aes(col=Management)) +
+  geom_smooth(method=lm, se=FALSE, linetype="dashed", aes(col=Management)) + ggtitle("Simulated Annual Evapotranspiration") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab("Annual ET (mm)") + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+# Annual WUE graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/wue_graph.tiff", units="in", height=5, width=10, res=300)
+wue_y <- ggplot(data=FF_yearly_NPP_max_LAI, aes(x=Year,y=wue)) + geom_line(aes(col=Management)) +
+  geom_smooth(method=lm, se=FALSE, linetype="dashed", aes(col=Management)) + ggtitle("Simulated Annual Water Use Efficiency") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab(expression("Annual WUE (g C m"^"-2"*" / kg H"[2]*"O m"^"-2"*")")) + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+# Combined max_LAI/NPP/ANPP/ANPP:NPP/ET/WUE graph
+combined_plot <- ggarrange(anpp_y, npp_y, anpp_npp_ratio_y, max_lai_y, et_y, wue_y, common.legend = TRUE, legend="bottom", labels=c("A","B","C","D","E","F"), nrow=3, ncol=2)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/allvars_graph.tiff", units="in", height=11, width=9, res=300)
+combined_plot + theme(plot.margin = margin(t = 1, r = 1, b = 0.5, l = 1, "lines"))
+
+
+### FF environmental variables graph
+# Annual precipitation graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/annualprec_graph.tiff", units="in", height=5, width=10, res=300)
+annualprec_graph <- ggplot(data=FF_yearly_NPP_ung, aes(x=Year,y=annualprec)) + geom_line() +
+  ggtitle("Total Annual Precipitation") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab("Annual Precipitation (mm)") + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5))
+# Growing season temperature graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/gstdl3_graph.tiff", units="in", height=5, width=10, res=300)
+gstdl3_graph <- ggplot(data=FF_yearly_NPP, aes(x=Year,y=gstdl3)) + geom_line(aes(col=Management)) +
+  ggtitle("Mean Air Temperature During Active Growth Period") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab("Mean Air Temperature (°C)") + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9")) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5))
+# CO2 levels
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/CO2_graph.tiff", units="in", height=5, width=10, res=300)
+CO2_graph <- ggplot(data=FF_yearly_NPP_ung, aes(x=Year,y=CO2)) + geom_line() +
+  ggtitle(expression("Annual Atmospheric [CO"[2]*"]")) +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab(expression("Annual Atmospheric [CO"[2]*"] (ppm)")) + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5))
+# Growing season length
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/gslenl3_graph.tiff", units="in", height=5, width=10, res=300)
+gslenl3_graph <- ggplot(data=FF_yearly_NPP, aes(x=Year,y=gslenl3)) + geom_line(aes(col=Management)) +
+  ggtitle("Length of Active Growth Period") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab("Length of Active Growth Period (Days)") + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9")) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5))
+# Combined plot
+combined_plot <- ggarrange(annualprec_graph, gstdl3_graph, CO2_graph, gslenl3_graph, common.legend = TRUE, legend="bottom", labels=c("A","B","C","D"), nrow=2, ncol=2)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/enviro_graph.tiff", units="in", height=9, width=10, res=300)
+combined_plot + theme(plot.margin = margin(t = 1, r = 1, b = 0.5, l = 1, "lines"))
+
+annualprec_reg <- lm(data=FF_yearly_NPP_ung, annualprec ~ Year)
+summary(annualprec_reg)
+
+
+FF_yearly_NPP_ung_test <- FF_yearly_NPP_ung %>%
+  filter(Year < 2010)
+annualprec_reg <- lm(data=FF_yearly_NPP_ung_test, Year ~ annualprec)
+summary(annualprec_reg)
+
+gstdl3_aov <- aov(data=FF_yearly_NPP, gstdl3 ~ Management)
+summary(gstdl3_aov)
+TukeyHSD(gstdl3_aov)
+
+gslenl3_aov <- aov(data=FF_yearly_NPP, gslenl3 ~ Management)
+summary(gslenl3_aov)
+TukeyHSD(gslenl3_aov)
+
+gstdl3_ung_reg <- lm(data=FF_yearly_NPP_ung, Year ~ gstdl3)
+summary(gstdl3_ung_reg)
+gstdl3_rot2_reg <- lm(data=FF_yearly_NPP_rot2, Year ~ gstdl3)
+summary(gstdl3_rot2_reg)
+gstdl3_cont_reg <- lm(data=FF_yearly_NPP_cont, Year ~ gstdl3)
+summary(gstdl3_cont_reg)
+gstdl3_multiple_reg <- lm(data=FF_yearly_NPP_cont, Year ~ gstdl3 + Management)
+summary(gstdl3_multiple_reg)
+
+gslenl3_ung_reg <- lm(data=FF_yearly_NPP_ung, Year ~ gslenl3)
+summary(gslenl3_ung_reg)
+gslenl3_rot2_reg <- lm(data=FF_yearly_NPP_rot2, Year ~ gslenl3)
+summary(gslenl3_rot2_reg)
+gslenl3_cont_reg <- lm(data=FF_yearly_NPP_cont, Year ~ gslenl3)
+summary(gslenl3_cont_reg)
+
+
+### FF spinup graph
+FF_spinup_yearly <- read_csv("FF_yearly_spinup.csv")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/SpinupVegtype0_graph.tiff", units="in", height=9, width=7, res=200)
+ggplot(data=FF_spinup_yearly, aes(x=Year,y=vegtype0)) + geom_line() + facet_grid(Location~.,scales="free_y",switch="y")
+
+
+### FF scatterplot observed vs regular
+# agbiom
+FF_daily_C3_oates_agbiom <- FF_daily_C3_oates %>%
+  rename(Model = agbiom)
+FF_val_recoded_recombined_renamed_agbiom <- FF_val_recoded_recombined_renamed %>%
+  rename(Observed = mean_agbiom)
+merged_data_agbiom <- merge(FF_daily_C3_oates_agbiom, FF_val_recoded_recombined_renamed_agbiom, by = c("Date","Management"), all.x = TRUE)
+filtered_data_agbiom <- merged_data_agbiom[!is.na(merged_data_agbiom$Observed),] %>%
+  distinct(Date, Model, Observed, Management, SE_agbiom)
+
+# plai
+FF_daily_C3_oates_plai <- FF_daily_C3_oates %>%
+  rename(Model = plai)
+FF_val_recoded_recombined_renamed_plai <- FF_val_recoded_recombined_renamed %>%
+  rename(Observed = mean_lai)
+merged_data_plai <- merge(FF_daily_C3_oates_plai, FF_val_recoded_recombined_renamed_plai, by = c("Date","Management"), all.x = TRUE)
+filtered_data_plai <- merged_data_plai[!is.na(merged_data_plai$Observed),] %>%
+  distinct(Date, Model, Observed, SE_lai, Management)
+
+df.annotations_agbiom <- data.frame(
+  Management = unique(filtered_data_agbiom$Management),
+  label = c(
+    paste0("R^2 == ", format(round(summary(lm(Model ~ Observed, data = filtered_data_agbiom[filtered_data_agbiom$Management == "Rotational Grazing", ]))$r.squared, 2), nsmall = 2)),
+    paste0("R^2 == ", format(round(summary(lm(Model ~ Observed, data = filtered_data_agbiom[filtered_data_agbiom$Management == "Continuous Grazing", ]))$r.squared, 2), nsmall = 2)),
+    paste0("R^2 == ", format(round(summary(lm(Model ~ Observed, data = filtered_data_agbiom[filtered_data_agbiom$Management == "Ungrazed", ]))$r.squared, 2), nsmall = 2))
+  )
+)
+
+agbiom_scatterplot <- ggplot(data = filtered_data_agbiom, aes(x = Observed, y = Model)) + 
+  geom_point(aes(col = Management, shape = Management)) +
+  geom_errorbar(aes(x = Observed, ymin = Model - SE_agbiom, ymax = Model + SE_agbiom, col = Management), 
+                width = 0.01, alpha = 0.5) +
+  ggtitle("Aboveground Biomass") +
+  geom_smooth(method = lm, se = FALSE, aes(col = Management)) +
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.position = "bottom", # added this line for graphical abstract figure
+        plot.margin = margin(t = 5, r = 20, b = 5, l = 5)) + # remove this line for combo fig - might shift to the left
+  ylab(expression("Model (kg m"^-2*")")) + 
+  xlab(expression("Observed (kg m"^-2*")")) +
+  scale_x_continuous(breaks = scales::breaks_pretty(6), 
+                     limits = c(min(filtered_data_agbiom$Model, na.rm = TRUE) - 0.035, max(filtered_data_agbiom$Model, na.rm = TRUE) + 0.035),
+                     expand = c(0, 0)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6), 
+                     limits = c(min(filtered_data_agbiom$Model, na.rm = TRUE) - 0.035, max(filtered_data_agbiom$Model, na.rm = TRUE) + 0.035),
+                     expand = c(0, 0)) +
+  scale_color_manual(values = c("Rotational Grazing" = "#009E73", "Continuous Grazing" = "#D55E00", "Ungrazed" = "#56B4E9")) +
+  scale_shape_manual(values = c(15, 16, 17)) +
+  coord_fixed(ratio = 1, 
+              xlim = c(min(filtered_data_agbiom$Model, na.rm = TRUE) - 0.035, max(filtered_data_agbiom$Model, na.rm = TRUE) + 0.035),
+              ylim = c(min(filtered_data_agbiom$Model, na.rm = TRUE) - 0.035, max(filtered_data_agbiom$Model, na.rm = TRUE) + 0.035)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "grey") +
+  geom_text(data = df.annotations_agbiom, aes(x = -Inf, y = +Inf, label = label, color = Management),
+            hjust = -0.1, vjust = c(1.4, 2.6, 3.8), size = 3.5, parse = TRUE, show.legend = FALSE)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/agbiom_scatterplot.tiff", units="in", height=5.2, width=5.2, res=300)
+agbiom_scatterplot
+
+df.annotations_plai <- data.frame(
+  Management = unique(filtered_data_plai$Management),
+  label = c(
+    paste0("R^2 == ", format(round(summary(lm(Model ~ Observed, data = filtered_data_plai[filtered_data_plai$Management == "Rotational Grazing", ]))$r.squared, 2), nsmall = 2)),
+    paste0("R^2 == ", format(round(summary(lm(Model ~ Observed, data = filtered_data_plai[filtered_data_plai$Management == "Continuous Grazing", ]))$r.squared, 2), nsmall = 2)),
+    paste0("R^2 == ", format(round(summary(lm(Model ~ Observed, data = filtered_data_plai[filtered_data_plai$Management == "Ungrazed", ]))$r.squared, 2), nsmall = 2))
+  )
+)
+
+plai_scatterplot <- ggplot(data = filtered_data_plai, aes(x = Observed, y = Model)) + 
+  geom_point(aes(col = Management, shape = Management)) +
+  geom_errorbar(aes(x = Observed, ymin = Model - SE_lai, ymax = Model + SE_lai, col = Management), 
+                width = 0.1, alpha = 0.5) +
+  ggtitle("Leaf Area Index") +
+  geom_smooth(method = lm, se = FALSE, aes(col = Management)) +
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.position = "bottom", # added this line for graphical abstract figure
+        plot.margin = margin(t = 5, r = 20, b = 5, l = 5)) + # remove this line for combo fig - might shift to the left
+  ylab(expression("Model (m"^"2"*" m"^-2*")")) + 
+  xlab(expression("Observed (m"^"2"*" m"^-2*")")) +
+  scale_x_continuous(breaks = scales::breaks_pretty(6), 
+                     limits = c(min(filtered_data_plai$Observed, na.rm = TRUE) - 0.45, max(filtered_data_plai$Observed, na.rm = TRUE) + 0.45),
+                     expand = c(0, 0)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6), 
+                     limits = c(min(filtered_data_plai$Observed, na.rm = TRUE) - 0.45, max(filtered_data_plai$Observed, na.rm = TRUE) + 0.45),
+                     expand = c(0, 0)) +
+  scale_color_manual(values = c("Rotational Grazing" = "#009E73", "Continuous Grazing" = "#D55E00", "Ungrazed" = "#56B4E9")) +
+  scale_shape_manual(values = c(15, 16, 17)) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotted")) +
+  coord_fixed(ratio = 1, 
+              xlim = c(min(filtered_data_plai$Observed, na.rm = TRUE) - 0.45, max(filtered_data_plai$Observed, na.rm = TRUE) + 0.45),
+              ylim = c(min(filtered_data_plai$Observed, na.rm = TRUE) - 0.45, max(filtered_data_plai$Observed, na.rm = TRUE) + 0.45)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "grey") +
+  geom_text(data = df.annotations_plai, aes(x = -Inf, y = +Inf, label = label, color = Management),
+            hjust = -0.1, vjust = c(1.4, 2.6, 3.8), size = 3.5, parse = TRUE, show.legend = FALSE)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/plai_scatterplot.tiff", units="in", height=5.2, width=5.2, res=300)
+plai_scatterplot
+
+combined_plot <- ggarrange(agbiom_scatterplot, plai_scatterplot, common.legend = TRUE, legend="bottom", labels=c("A","B"), ncol=2)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/agbiom_plai_scatterplot.tiff", units="in", height=5, width=9, res=300)
+combined_plot + theme(plot.margin = margin(t = 1, r = 1, b = 0.5, l = 1, "lines"))
+
+round(summary(lm(Model ~ Observed, data = filtered_data_agbiom[filtered_data_agbiom$Management == "Ungrazed", ]))$r.squared, 2)
+round(summary(lm(Model ~ Observed, data = filtered_data_agbiom[filtered_data_agbiom$Management == "2-Day Rotation", ]))$r.squared, 2)
+round(summary(lm(Model ~ Observed, data = filtered_data_agbiom[filtered_data_agbiom$Management == "Continuous Grazing", ]))$r.squared, 2)
+round(summary(lm(Model ~ Observed, data = filtered_data_plai[filtered_data_plai$Management == "Ungrazed", ]))$r.squared, 2)
+round(summary(lm(Model ~ Observed, data = filtered_data_plai[filtered_data_plai$Management == "2-Day Rotation", ]))$r.squared, 2)
+round(summary(lm(Model ~ Observed, data = filtered_data_plai[filtered_data_plai$Management == "Continuous Grazing", ]))$r.squared, 2)
+
+
+### FF graphical abstract
+# Evaluation graphs
+FF_daily_C3_oates_recoded <- FF_daily_C3_oates
+FF_daily_C3_oates_recoded$Management <- gsub("2-Day Rotation", "2-Day Rotation - Date-Aligned", FF_daily_C3_oates_recoded$Management)
+FF_val_recoded_recombined_renamed_graphical_abstract <- FF_val_recoded_recombined_renamed
+FF_val_recoded_recombined_renamed_graphical_abstract$Management <- gsub("2-Day Rotation", "2-Day Rotation - Date-Aligned", FF_val_recoded_recombined_renamed_graphical_abstract$Management)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/graphical_abstract_Sim_vs_Obs_LAI_box_FF.tiff", units="in", height=8, width=11, res=300)
+lai_graphical_abstract <- ggplot() + geom_boxplot(data=FF_val_recoded_recombined_renamed_graphical_abstract,width=8,aes(x=Date,y=plai,group=Date,col=Management)) +
+  geom_line(data=FF_daily_C3_oates_recoded, aes(x=Date, y=plai, col=Management)) +
+  ggtitle("Simulated vs. Observed LAI") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) + facet_wrap(~Management, ncol=1) +
+  scale_color_manual(values=c("2-Day Rotation - Date-Aligned"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9")) +
+  theme(legend.position = "bottom")
+
+# ANPPtot graph
+anpp_y_GA <- ggplot(data=FF_yearly_NPP_max_LAI, aes(x=Year,y=anpptot)) + geom_line(aes(col=Management)) +
+  geom_smooth(method=lm, se=FALSE, aes(col=Management)) + ggtitle("Simulated ANPP") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab("Annual ANPP (kg/m2)") + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+# NPPtot graph
+npp_y_GA <- ggplot(data=FF_yearly_NPP_max_LAI, aes(x=Year,y=npptot)) + geom_line(aes(col=Management)) +
+  geom_smooth(method=lm, se=FALSE, aes(col=Management)) + ggtitle("Simulated Total NPP") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab("Total Annual NPP (kg/m2)") + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+# Annual WUE graph
+wue_y_GA <- ggplot(data=FF_yearly_NPP_max_LAI, aes(x=Year,y=wue)) + geom_line(aes(col=Management)) +
+  geom_smooth(method=lm, se=FALSE, aes(col=Management)) + ggtitle("Simulated Annual Water Use Efficiency") +
+  theme(axis.text.x=element_text(angle=70, vjust=0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        strip.background = element_blank(),
+        legend.key = element_rect(fill = NA),
+        legend.box.background = element_rect(color = "black", fill = NA, size = 0.35)) +
+  ylab("Annual WUE") + scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_x_continuous(breaks = scales::breaks_pretty(5)) +
+  scale_color_manual(values=c("2-Day Rotation"="#009E73","Continuous Grazing"="#D55E00","Ungrazed"="#56B4E9"))
+
+
+
+plot_left <- lai_graphical_abstract
+plot_right <- ggarrange(anpp_y_GA, npp_y_GA, wue_y_GA, nrow = 3, common.legend = TRUE, legend = "bottom")
+
+# Increase the right margin of plot_right to create space as well as for the bottom margin
+plot_right <- plot_right + theme(plot.margin = margin(l = 20, b = 2, unit = "mm"))
+
+# Add titles to the combined plot
+final_plot <- plot_grid(
+  plot_grid(plot_left, label_x = 0.5, label_y = 1, hjust = -0.1, vjust = 1.5, rel_widths = c(0.5, 0.5)),
+  plot_grid(plot_right, label_x = 0.5, label_y = 1, hjust = 1.1, vjust = 1.5, rel_widths = c(0.5, 0.5)),
+  nrow = 1, rel_widths = c(0.5, 0.5)
+)
+
+# Save the combined plot
+tiff(file = "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/graphical_abstract_combined.tiff",
+     units = "in", height = 7, width = 17.5, res = 300)
+final_plot
+dev.off()
+
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/graphical_abstract_combined.tiff", units="in", height=8, width=11, res=300)
+plot_grid(plot_left, plot_right, nrow = 1, rel_widths = c(0.5, 0.5))
+```
+
+```{r}
+# NO3 leaching and P runoff for Eric and Kelsie - idepth = 1.5m
+FF_yearly <- read_csv("FF_yearly.csv")
+
+no3leach_idepth_linegraph <- ggplot(data=FF_yearly, aes(x=Year, y=no3leach_idepth)) + geom_line(aes(col=Management)) +
+  ggtitle("NO3 Leaching at 1.5m Depth") + ylab("NO3 Leaching at 1.5m Depth (kg/ha)") + ylim(0,0.1)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/NO3_leaching_1.5m_linegraph.tiff", units="in", height=5, width=7, res=250)
+no3leach_idepth_linegraph
+
+atotrunp_linegraph <- ggplot(data=FF_yearly, aes(x=Year, y=atotrunp)) + geom_line(aes(col=Management)) +
+  ggtitle("Total P Runoff")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/atotrunp_linegraph.tiff", units="in", height=5, width=7, res=250)
+atotrunp_linegraph
+
+npptot_linegraph <- ggplot(data=FF_yearly, aes(x=Year, y=npptot)) + geom_line(aes(col=Management)) +
+  ggtitle("Total NPP")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/npptot_linegraph.tiff", units="in", height=5, width=7, res=250)
+npptot_linegraph
+
+
+# Doing the same with the old vegetation.f
+setwd("/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis")
+
+##### Reading in day and year dataframes
+year <- read_csv("Year.csv") # This includes every year from 1961 to 2021
+
+oldveg_FF_npp_readin <- nc_open("oldveg-FF-npp.nc")
+oldveg_FF_anpptot <- ncvar_get(oldveg_FF_npp_readin, "anpptot")
+oldveg_FF_npptot <- ncvar_get(oldveg_FF_npp_readin, "npptot")
+oldveg_FF_drain_nleachy_readin <- nc_open("oldveg-FF-drain_nleachy.nc")
+oldveg_FF_no3leach_idepth <- ncvar_get(oldveg_FF_drain_nleachy_readin, "no3leach_idepth")
+oldveg_FF_prunoff_readin <- nc_open("oldveg-FF-prunoff.nc")
+oldveg_FF_atotrunp <- ncvar_get(oldveg_FF_prunoff_readin, "atotrunp")
+
+oldveg_FF_annual_df <- data.frame(year=year,anpptot=oldveg_FF_anpptot,npptot=oldveg_FF_npptot,
+                                       no3leach_idepth=oldveg_FF_no3leach_idepth, atotrunp=oldveg_FF_atotrunp)
+
+write.csv(oldveg_FF_annual_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/oldveg_FF_yearly.csv", row.names=FALSE)
+
+oldveg_FF_yearly <- read_csv("oldveg_FF_yearly.csv")
+
+oldveg_no3leach_idepth_linegraph <- ggplot(data=oldveg_FF_yearly, aes(x=Year, y=no3leach_idepth)) + geom_line() +
+  ggtitle("NO3 Leaching at 1.5m Depth for Old vegetation.f") + ylab("NO3 Leaching at 1.5m Depth (kg/ha)") + ylim(0,0.7)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/oldveg_NO3_leaching_1.5m_linegraph.tiff", units="in", height=5, width=7, res=200)
+oldveg_no3leach_idepth_linegraph
+
+oldveg_atotrunp_linegraph <- ggplot(data=oldveg_FF_yearly, aes(x=Year, y=atotrunp)) + geom_line() +
+  ggtitle("Total P Runoff for Old vegetation.f") + ylab("Total P Runoff (kg/ha)")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/oldveg_atotrunp_linegraph.tiff", units="in", height=5, width=7, res=200)
+oldveg_atotrunp_linegraph
+
+oldveg_npptot_linegraph <- ggplot(data=oldveg_FF_yearly, aes(x=Year, y=npptot)) + geom_line() +
+  ggtitle("Total NPP for Old vegetation.f") + ylab("Total NPP (kg/m2/year)")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/oldveg_npptot_linegraph.tiff", units="in", height=5, width=7, res=200)
+oldveg_npptot_linegraph
+
+```
+
+
+
+```{r}
+##### Setting working directory
+setwd("/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis")
+
+##### Reading in day and year dataframes
+date <- read_csv("Date_daily.csv")
+year <- read_csv("Year.csv")
+
+##### Reading in NetCDF data (simulation runs)
+
+#### Arlington runs
+### Mixed
+## Ungrazed
+# Daily
+mix_ung_ARL_biom_readin <- nc_open("ARL-mix-ung-biomass.nc")
+mix_ung_ARL_cbiol <- ncvar_get(mix_ung_ARL_biom_readin, "cbiol")
+mix_ung_ARL_cbios <- ncvar_get(mix_ung_ARL_biom_readin, "cbios")
+mix_ung_ARL_cbiog <- ncvar_get(mix_ung_ARL_biom_readin, "cbiog")
+mix_ung_ARL_cbior <- ncvar_get(mix_ung_ARL_biom_readin, "cbior")
+mix_ung_ARL_biomass <- ncvar_get(mix_ung_ARL_biom_readin, "biomass")
+mix_ung_ARL_plai_readin <- nc_open("ARL-mix-ung-plai.nc")
+mix_ung_ARL_plai <- ncvar_get(mix_ung_ARL_plai_readin, "plai")
+# No PFT
+mix_ung_ARL_pasture_readin <- nc_open("ARL-mix-ung-pasture.nc")
+mix_ung_ARL_agbiom <- ncvar_get(mix_ung_ARL_pasture_readin, "agbiom")
+mix_ung_ARL_grazedbiom <- ncvar_get(mix_ung_ARL_pasture_readin, "grazedbiom")
+mix_ung_ARL_l3agbiomfrac <- ncvar_get(mix_ung_ARL_pasture_readin, "l3agbiomfrac")
+# Annual
+mix_ung_ARL_npp_readin <- nc_open("ARL-mix-ung-npp.nc")
+mix_ung_ARL_anpptot <- ncvar_get(mix_ung_ARL_npp_readin, "anpptot")
+mix_ung_ARL_npptot <- ncvar_get(mix_ung_ARL_npp_readin, "npptot")
+mix_ung_ARL_npp <- ncvar_get(mix_ung_ARL_npp_readin, "npp")
+### C3
+## Ungrazed
+# Daily
+C3_ung_ARL_biom_readin <- nc_open("ARL-C3-ung-biomass.nc")
+C3_ung_ARL_cbiol <- ncvar_get(C3_ung_ARL_biom_readin, "cbiol")
+C3_ung_ARL_cbios <- ncvar_get(C3_ung_ARL_biom_readin, "cbios")
+C3_ung_ARL_cbiog <- ncvar_get(C3_ung_ARL_biom_readin, "cbiog")
+C3_ung_ARL_cbior <- ncvar_get(C3_ung_ARL_biom_readin, "cbior")
+C3_ung_ARL_biomass <- ncvar_get(C3_ung_ARL_biom_readin, "biomass")
+C3_ung_ARL_plai_readin <- nc_open("ARL-C3-ung-plai.nc")
+C3_ung_ARL_plai <- ncvar_get(C3_ung_ARL_plai_readin, "plai")
+# No PFT
+C3_ung_ARL_pasture_readin <- nc_open("ARL-C3-ung-pasture.nc")
+C3_ung_ARL_agbiom <- ncvar_get(C3_ung_ARL_pasture_readin, "agbiom")
+C3_ung_ARL_grazedbiom <- ncvar_get(C3_ung_ARL_pasture_readin, "grazedbiom")
+C3_ung_ARL_l3agbiomfrac <- ncvar_get(C3_ung_ARL_pasture_readin, "l3agbiomfrac")
+# Annual
+C3_ung_ARL_npp_readin <- nc_open("ARL-C3-ung-npp.nc")
+C3_ung_ARL_anpptot <- ncvar_get(C3_ung_ARL_npp_readin, "anpptot")
+C3_ung_ARL_npptot <- ncvar_get(C3_ung_ARL_npp_readin, "npptot")
+C3_ung_ARL_npp <- ncvar_get(C3_ung_ARL_npp_readin, "npp")
+### C4
+## Ungrazed
+# Daily
+C4_ung_ARL_biom_readin <- nc_open("ARL-C4-ung-biomass.nc")
+C4_ung_ARL_cbiol <- ncvar_get(C4_ung_ARL_biom_readin, "cbiol")
+C4_ung_ARL_cbios <- ncvar_get(C4_ung_ARL_biom_readin, "cbios")
+C4_ung_ARL_cbiog <- ncvar_get(C4_ung_ARL_biom_readin, "cbiog")
+C4_ung_ARL_cbior <- ncvar_get(C4_ung_ARL_biom_readin, "cbior")
+C4_ung_ARL_biomass <- ncvar_get(C4_ung_ARL_biom_readin, "biomass")
+C4_ung_ARL_plai_readin <- nc_open("ARL-C4-ung-plai.nc")
+C4_ung_ARL_plai <- ncvar_get(C4_ung_ARL_plai_readin, "plai")
+# No PFT
+C4_ung_ARL_pasture_readin <- nc_open("ARL-C4-ung-pasture.nc")
+C4_ung_ARL_agbiom <- ncvar_get(C4_ung_ARL_pasture_readin, "agbiom")
+C4_ung_ARL_grazedbiom <- ncvar_get(C4_ung_ARL_pasture_readin, "grazedbiom")
+C4_ung_ARL_l3agbiomfrac <- ncvar_get(C4_ung_ARL_pasture_readin, "l3agbiomfrac")
+# Annual
+C4_ung_ARL_npp_readin <- nc_open("ARL-C4-ung-npp.nc")
+C4_ung_ARL_anpptot <- ncvar_get(C4_ung_ARL_npp_readin, "anpptot")
+C4_ung_ARL_npptot <- ncvar_get(C4_ung_ARL_npp_readin, "npptot")
+C4_ung_ARL_npp <- ncvar_get(C4_ung_ARL_npp_readin, "npp")
+
+#### Bison Ridge Ranch runs
+### Mixed
+## Ungrazed
+# Daily
+mix_ung_BR_biom_readin <- nc_open("BR-mix-ung-biomass.nc")
+mix_ung_BR_cbiol <- ncvar_get(mix_ung_BR_biom_readin, "cbiol")
+mix_ung_BR_cbios <- ncvar_get(mix_ung_BR_biom_readin, "cbios")
+mix_ung_BR_cbiog <- ncvar_get(mix_ung_BR_biom_readin, "cbiog")
+mix_ung_BR_cbior <- ncvar_get(mix_ung_BR_biom_readin, "cbior")
+mix_ung_BR_biomass <- ncvar_get(mix_ung_BR_biom_readin, "biomass")
+mix_ung_BR_plai_readin <- nc_open("BR-mix-ung-plai.nc")
+mix_ung_BR_plai <- ncvar_get(mix_ung_BR_plai_readin, "plai")
+# No PFT
+mix_ung_BR_pasture_readin <- nc_open("BR-mix-ung-pasture.nc")
+mix_ung_BR_agbiom <- ncvar_get(mix_ung_BR_pasture_readin, "agbiom")
+mix_ung_BR_grazedbiom <- ncvar_get(mix_ung_BR_pasture_readin, "grazedbiom")
+mix_ung_BR_l3agbiomfrac <- ncvar_get(mix_ung_BR_pasture_readin, "l3agbiomfrac")
+# Annual
+mix_ung_BR_npp_readin <- nc_open("BR-mix-ung-npp.nc")
+mix_ung_BR_anpptot <- ncvar_get(mix_ung_BR_npp_readin, "anpptot")
+mix_ung_BR_npptot <- ncvar_get(mix_ung_BR_npp_readin, "npptot")
+mix_ung_BR_npp <- ncvar_get(mix_ung_BR_npp_readin, "npp")
+### C3
+## Ungrazed
+# Daily
+C3_ung_BR_biom_readin <- nc_open("BR-C3-ung-biomass.nc")
+C3_ung_BR_cbiol <- ncvar_get(C3_ung_BR_biom_readin, "cbiol")
+C3_ung_BR_cbios <- ncvar_get(C3_ung_BR_biom_readin, "cbios")
+C3_ung_BR_cbiog <- ncvar_get(C3_ung_BR_biom_readin, "cbiog")
+C3_ung_BR_cbior <- ncvar_get(C3_ung_BR_biom_readin, "cbior")
+C3_ung_BR_biomass <- ncvar_get(C3_ung_BR_biom_readin, "biomass")
+C3_ung_BR_plai_readin <- nc_open("BR-C3-ung-plai.nc")
+C3_ung_BR_plai <- ncvar_get(C3_ung_BR_plai_readin, "plai")
+# No PFT
+C3_ung_BR_pasture_readin <- nc_open("BR-C3-ung-pasture.nc")
+C3_ung_BR_agbiom <- ncvar_get(C3_ung_BR_pasture_readin, "agbiom")
+C3_ung_BR_grazedbiom <- ncvar_get(C3_ung_BR_pasture_readin, "grazedbiom")
+C3_ung_BR_l3agbiomfrac <- ncvar_get(C3_ung_BR_pasture_readin, "l3agbiomfrac")
+# Annual
+C3_ung_BR_npp_readin <- nc_open("BR-C3-ung-npp.nc")
+C3_ung_BR_anpptot <- ncvar_get(C3_ung_BR_npp_readin, "anpptot")
+C3_ung_BR_npptot <- ncvar_get(C3_ung_BR_npp_readin, "npptot")
+C3_ung_BR_npp <- ncvar_get(C3_ung_BR_npp_readin, "npp")
+### C4
+## Ungrazed
+# Daily
+C4_ung_BR_biom_readin <- nc_open("BR-C4-ung-biomass.nc")
+C4_ung_BR_cbiol <- ncvar_get(C4_ung_BR_biom_readin, "cbiol")
+C4_ung_BR_cbios <- ncvar_get(C4_ung_BR_biom_readin, "cbios")
+C4_ung_BR_cbiog <- ncvar_get(C4_ung_BR_biom_readin, "cbiog")
+C4_ung_BR_cbior <- ncvar_get(C4_ung_BR_biom_readin, "cbior")
+C4_ung_BR_biomass <- ncvar_get(C4_ung_BR_biom_readin, "biomass")
+C4_ung_BR_plai_readin <- nc_open("BR-C4-ung-plai.nc")
+C4_ung_BR_plai <- ncvar_get(C4_ung_BR_plai_readin, "plai")
+# No PFT
+C4_ung_BR_pasture_readin <- nc_open("BR-C4-ung-pasture.nc")
+C4_ung_BR_agbiom <- ncvar_get(C4_ung_BR_pasture_readin, "agbiom")
+C4_ung_BR_grazedbiom <- ncvar_get(C4_ung_BR_pasture_readin, "grazedbiom")
+C4_ung_BR_l3agbiomfrac <- ncvar_get(C4_ung_BR_pasture_readin, "l3agbiomfrac")
+# Annual
+C4_ung_BR_npp_readin <- nc_open("BR-C4-ung-npp.nc")
+C4_ung_BR_anpptot <- ncvar_get(C4_ung_BR_npp_readin, "anpptot")
+C4_ung_BR_npptot <- ncvar_get(C4_ung_BR_npp_readin, "npptot")
+C4_ung_BR_npp <- ncvar_get(C4_ung_BR_npp_readin, "npp")
+
+#### Frankbrook Farm runs
+### Mixed
+## Ungrazed
+# Daily
+mix_ung_FF_biom_readin <- nc_open("FF-mix-ung-biomass.nc")
+mix_ung_FF_cbiol <- ncvar_get(mix_ung_FF_biom_readin, "cbiol")
+mix_ung_FF_cbios <- ncvar_get(mix_ung_FF_biom_readin, "cbios")
+mix_ung_FF_cbiog <- ncvar_get(mix_ung_FF_biom_readin, "cbiog")
+mix_ung_FF_cbior <- ncvar_get(mix_ung_FF_biom_readin, "cbior")
+mix_ung_FF_biomass <- ncvar_get(mix_ung_FF_biom_readin, "biomass")
+mix_ung_FF_plai_readin <- nc_open("FF-mix-ung-plai.nc")
+mix_ung_FF_plai <- ncvar_get(mix_ung_FF_plai_readin, "plai")
+# No PFT
+mix_ung_FF_pasture_readin <- nc_open("FF-mix-ung-pasture.nc")
+mix_ung_FF_agbiom <- ncvar_get(mix_ung_FF_pasture_readin, "agbiom")
+mix_ung_FF_grazedbiom <- ncvar_get(mix_ung_FF_pasture_readin, "grazedbiom")
+mix_ung_FF_l3agbiomfrac <- ncvar_get(mix_ung_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+mix_ung_FF_npp_readin <- nc_open("FF-mix-ung-npp.nc")
+mix_ung_FF_anpptot <- ncvar_get(mix_ung_FF_npp_readin, "anpptot")
+mix_ung_FF_npptot <- ncvar_get(mix_ung_FF_npp_readin, "npptot")
+mix_ung_FF_npp <- ncvar_get(mix_ung_FF_npp_readin, "npp")
+## 2-Day Rotation
+# Daily
+mix_rot2_FF_biom_readin <- nc_open("FF-mix-rot2-biomass.nc")
+mix_rot2_FF_cbiol <- ncvar_get(mix_rot2_FF_biom_readin, "cbiol")
+mix_rot2_FF_cbios <- ncvar_get(mix_rot2_FF_biom_readin, "cbios")
+mix_rot2_FF_cbiog <- ncvar_get(mix_rot2_FF_biom_readin, "cbiog")
+mix_rot2_FF_cbior <- ncvar_get(mix_rot2_FF_biom_readin, "cbior")
+mix_rot2_FF_biomass <- ncvar_get(mix_rot2_FF_biom_readin, "biomass")
+mix_rot2_FF_plai_readin <- nc_open("FF-mix-rot2-plai.nc")
+mix_rot2_FF_plai <- ncvar_get(mix_rot2_FF_plai_readin, "plai")
+# No PFT
+mix_rot2_FF_pasture_readin <- nc_open("FF-mix-rot2-pasture.nc")
+mix_rot2_FF_agbiom <- ncvar_get(mix_rot2_FF_pasture_readin, "agbiom")
+mix_rot2_FF_grazedbiom <- ncvar_get(mix_rot2_FF_pasture_readin, "grazedbiom")
+mix_rot2_FF_l3agbiomfrac <- ncvar_get(mix_rot2_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+mix_rot2_FF_npp_readin <- nc_open("FF-mix-rot2-npp.nc")
+mix_rot2_FF_anpptot <- ncvar_get(mix_rot2_FF_npp_readin, "anpptot")
+mix_rot2_FF_npptot <- ncvar_get(mix_rot2_FF_npp_readin, "npptot")
+mix_rot2_FF_npp <- ncvar_get(mix_rot2_FF_npp_readin, "npp")
+## Continuous
+# Daily
+mix_cont_FF_biom_readin <- nc_open("FF-mix-cont-biomass.nc")
+mix_cont_FF_cbiol <- ncvar_get(mix_cont_FF_biom_readin, "cbiol")
+mix_cont_FF_cbios <- ncvar_get(mix_cont_FF_biom_readin, "cbios")
+mix_cont_FF_cbiog <- ncvar_get(mix_cont_FF_biom_readin, "cbiog")
+mix_cont_FF_cbior <- ncvar_get(mix_cont_FF_biom_readin, "cbior")
+mix_cont_FF_biomass <- ncvar_get(mix_cont_FF_biom_readin, "biomass")
+mix_cont_FF_plai_readin <- nc_open("FF-mix-cont-plai.nc")
+mix_cont_FF_plai <- ncvar_get(mix_cont_FF_plai_readin, "plai")
+# No PFT
+mix_cont_FF_pasture_readin <- nc_open("FF-mix-cont-pasture.nc")
+mix_cont_FF_agbiom <- ncvar_get(mix_cont_FF_pasture_readin, "agbiom")
+mix_cont_FF_grazedbiom <- ncvar_get(mix_cont_FF_pasture_readin, "grazedbiom")
+mix_cont_FF_l3agbiomfrac <- ncvar_get(mix_cont_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+mix_cont_FF_npp_readin <- nc_open("FF-mix-cont-npp.nc")
+mix_cont_FF_anpptot <- ncvar_get(mix_cont_FF_npp_readin, "anpptot")
+mix_cont_FF_npptot <- ncvar_get(mix_cont_FF_npp_readin, "npptot")
+mix_cont_FF_npp <- ncvar_get(mix_cont_FF_npp_readin, "npp")
+
+### C3 Only
+## Ungrazed
+# Daily
+C3_ung_FF_biom_readin <- nc_open("FF-C3-ung-biomass.nc")
+C3_ung_FF_cbiol <- ncvar_get(C3_ung_FF_biom_readin, "cbiol")
+C3_ung_FF_cbios <- ncvar_get(C3_ung_FF_biom_readin, "cbios")
+C3_ung_FF_cbiog <- ncvar_get(C3_ung_FF_biom_readin, "cbiog")
+C3_ung_FF_cbior <- ncvar_get(C3_ung_FF_biom_readin, "cbior")
+C3_ung_FF_biomass <- ncvar_get(C3_ung_FF_biom_readin, "biomass")
+C3_ung_FF_plai_readin <- nc_open("FF-C3-ung-plai.nc")
+C3_ung_FF_plai <- ncvar_get(C3_ung_FF_plai_readin, "plai")
+# No PFT
+C3_ung_FF_pasture_readin <- nc_open("FF-C3-ung-pasture.nc")
+C3_ung_FF_agbiom <- ncvar_get(C3_ung_FF_pasture_readin, "agbiom")
+C3_ung_FF_grazedbiom <- ncvar_get(C3_ung_FF_pasture_readin, "grazedbiom")
+C3_ung_FF_l3agbiomfrac <- ncvar_get(C3_ung_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+C3_ung_FF_npp_readin <- nc_open("FF-C3-ung-npp.nc")
+C3_ung_FF_anpptot <- ncvar_get(C3_ung_FF_npp_readin, "anpptot")
+C3_ung_FF_npptot <- ncvar_get(C3_ung_FF_npp_readin, "npptot")
+C3_ung_FF_npp <- ncvar_get(C3_ung_FF_npp_readin, "npp")
+## 2-Day Rotation
+# Daily
+C3_rot2_FF_biom_readin <- nc_open("FF-C3-rot2-biomass.nc")
+C3_rot2_FF_cbiol <- ncvar_get(C3_rot2_FF_biom_readin, "cbiol")
+C3_rot2_FF_cbios <- ncvar_get(C3_rot2_FF_biom_readin, "cbios")
+C3_rot2_FF_cbiog <- ncvar_get(C3_rot2_FF_biom_readin, "cbiog")
+C3_rot2_FF_cbior <- ncvar_get(C3_rot2_FF_biom_readin, "cbior")
+C3_rot2_FF_biomass <- ncvar_get(C3_rot2_FF_biom_readin, "biomass")
+C3_rot2_FF_plai_readin <- nc_open("FF-C3-rot2-plai.nc")
+C3_rot2_FF_plai <- ncvar_get(C3_rot2_FF_plai_readin, "plai")
+# No PFT
+C3_rot2_FF_pasture_readin <- nc_open("FF-C3-rot2-pasture.nc")
+C3_rot2_FF_agbiom <- ncvar_get(C3_rot2_FF_pasture_readin, "agbiom")
+C3_rot2_FF_grazedbiom <- ncvar_get(C3_rot2_FF_pasture_readin, "grazedbiom")
+C3_rot2_FF_l3agbiomfrac <- ncvar_get(C3_rot2_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+C3_rot2_FF_npp_readin <- nc_open("FF-C3-rot2-npp.nc")
+C3_rot2_FF_anpptot <- ncvar_get(C3_rot2_FF_npp_readin, "anpptot")
+C3_rot2_FF_npptot <- ncvar_get(C3_rot2_FF_npp_readin, "npptot")
+C3_rot2_FF_npp <- ncvar_get(C3_rot2_FF_npp_readin, "npp")
+## Continuous
+# Daily
+C3_cont_FF_biom_readin <- nc_open("FF-C3-cont-biomass.nc")
+C3_cont_FF_cbiol <- ncvar_get(C3_cont_FF_biom_readin, "cbiol")
+C3_cont_FF_cbios <- ncvar_get(C3_cont_FF_biom_readin, "cbios")
+C3_cont_FF_cbiog <- ncvar_get(C3_cont_FF_biom_readin, "cbiog")
+C3_cont_FF_cbior <- ncvar_get(C3_cont_FF_biom_readin, "cbior")
+C3_cont_FF_biomass <- ncvar_get(C3_cont_FF_biom_readin, "biomass")
+C3_cont_FF_plai_readin <- nc_open("FF-C3-cont-plai.nc")
+C3_cont_FF_plai <- ncvar_get(C3_cont_FF_plai_readin, "plai")
+# No PFT
+C3_cont_FF_pasture_readin <- nc_open("FF-C3-cont-pasture.nc")
+C3_cont_FF_agbiom <- ncvar_get(C3_cont_FF_pasture_readin, "agbiom")
+C3_cont_FF_grazedbiom <- ncvar_get(C3_cont_FF_pasture_readin, "grazedbiom")
+C3_cont_FF_l3agbiomfrac <- ncvar_get(C3_cont_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+C3_cont_FF_npp_readin <- nc_open("FF-C3-cont-npp.nc")
+C3_cont_FF_anpptot <- ncvar_get(C3_cont_FF_npp_readin, "anpptot")
+C3_cont_FF_npptot <- ncvar_get(C3_cont_FF_npp_readin, "npptot")
+C3_cont_FF_npp <- ncvar_get(C3_cont_FF_npp_readin, "npp")
+
+### C4 Only
+## Ungrazed
+# Daily
+C4_ung_FF_biom_readin <- nc_open("FF-C4-ung-biomass.nc")
+C4_ung_FF_cbiol <- ncvar_get(C4_ung_FF_biom_readin, "cbiol")
+C4_ung_FF_cbios <- ncvar_get(C4_ung_FF_biom_readin, "cbios")
+C4_ung_FF_cbiog <- ncvar_get(C4_ung_FF_biom_readin, "cbiog")
+C4_ung_FF_cbior <- ncvar_get(C4_ung_FF_biom_readin, "cbior")
+C4_ung_FF_biomass <- ncvar_get(C4_ung_FF_biom_readin, "biomass")
+C4_ung_FF_plai_readin <- nc_open("FF-C4-ung-plai.nc")
+C4_ung_FF_plai <- ncvar_get(C4_ung_FF_plai_readin, "plai")
+# No PFT
+C4_ung_FF_pasture_readin <- nc_open("FF-C4-ung-pasture.nc")
+C4_ung_FF_agbiom <- ncvar_get(C4_ung_FF_pasture_readin, "agbiom")
+C4_ung_FF_grazedbiom <- ncvar_get(C4_ung_FF_pasture_readin, "grazedbiom")
+C4_ung_FF_l3agbiomfrac <- ncvar_get(C4_ung_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+C4_ung_FF_npp_readin <- nc_open("FF-C4-ung-npp.nc")
+C4_ung_FF_anpptot <- ncvar_get(C4_ung_FF_npp_readin, "anpptot")
+C4_ung_FF_npptot <- ncvar_get(C4_ung_FF_npp_readin, "npptot")
+C4_ung_FF_npp <- ncvar_get(C4_ung_FF_npp_readin, "npp")
+## 2-Day Rotation
+# Daily
+C4_rot2_FF_biom_readin <- nc_open("FF-C4-rot2-biomass.nc")
+C4_rot2_FF_cbiol <- ncvar_get(C4_rot2_FF_biom_readin, "cbiol")
+C4_rot2_FF_cbios <- ncvar_get(C4_rot2_FF_biom_readin, "cbios")
+C4_rot2_FF_cbiog <- ncvar_get(C4_rot2_FF_biom_readin, "cbiog")
+C4_rot2_FF_cbior <- ncvar_get(C4_rot2_FF_biom_readin, "cbior")
+C4_rot2_FF_biomass <- ncvar_get(C4_rot2_FF_biom_readin, "biomass")
+C4_rot2_FF_plai_readin <- nc_open("FF-C4-rot2-plai.nc")
+C4_rot2_FF_plai <- ncvar_get(C4_rot2_FF_plai_readin, "plai")
+# No PFT
+C4_rot2_FF_pasture_readin <- nc_open("FF-C4-rot2-pasture.nc")
+C4_rot2_FF_agbiom <- ncvar_get(C4_rot2_FF_pasture_readin, "agbiom")
+C4_rot2_FF_grazedbiom <- ncvar_get(C4_rot2_FF_pasture_readin, "grazedbiom")
+C4_rot2_FF_l3agbiomfrac <- ncvar_get(C4_rot2_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+C4_rot2_FF_npp_readin <- nc_open("FF-C4-rot2-npp.nc")
+C4_rot2_FF_anpptot <- ncvar_get(C4_rot2_FF_npp_readin, "anpptot")
+C4_rot2_FF_npptot <- ncvar_get(C4_rot2_FF_npp_readin, "npptot")
+C4_rot2_FF_npp <- ncvar_get(C4_rot2_FF_npp_readin, "npp")
+## Continuous
+# Daily
+C4_cont_FF_biom_readin <- nc_open("FF-C4-cont-biomass.nc")
+C4_cont_FF_cbiol <- ncvar_get(C4_cont_FF_biom_readin, "cbiol")
+C4_cont_FF_cbios <- ncvar_get(C4_cont_FF_biom_readin, "cbios")
+C4_cont_FF_cbiog <- ncvar_get(C4_cont_FF_biom_readin, "cbiog")
+C4_cont_FF_cbior <- ncvar_get(C4_cont_FF_biom_readin, "cbior")
+C4_cont_FF_biomass <- ncvar_get(C4_cont_FF_biom_readin, "biomass")
+C4_cont_FF_plai_readin <- nc_open("FF-C4-cont-plai.nc")
+C4_cont_FF_plai <- ncvar_get(C4_cont_FF_plai_readin, "plai")
+# No PFT
+C4_cont_FF_pasture_readin <- nc_open("FF-C4-cont-pasture.nc")
+C4_cont_FF_agbiom <- ncvar_get(C4_cont_FF_pasture_readin, "agbiom")
+C4_cont_FF_grazedbiom <- ncvar_get(C4_cont_FF_pasture_readin, "grazedbiom")
+C4_cont_FF_l3agbiomfrac <- ncvar_get(C4_cont_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+C4_cont_FF_npp_readin <- nc_open("FF-C4-cont-npp.nc")
+C4_cont_FF_anpptot <- ncvar_get(C4_cont_FF_npp_readin, "anpptot")
+C4_cont_FF_npptot <- ncvar_get(C4_cont_FF_npp_readin, "npptot")
+C4_cont_FF_npp <- ncvar_get(C4_cont_FF_npp_readin, "npp")
+```
+
+```{r}
+##### Creating new dataframes
+
+#### Arlington
+### Mixed
+## Ungrazed
+# Daily
+mix_ung_ARL_daily_C4_df <- data.frame(day=date,PFT="C4 Grass",biomass=mix_ung_ARL_biomass[11,],cbiol=mix_ung_ARL_cbiol[11,],
+                                        cbios=mix_ung_ARL_cbios[11,],cbiog=mix_ung_ARL_cbiog[11,],cbior=mix_ung_ARL_cbior[11,],
+                                        plai=mix_ung_ARL_plai[11,],SimulationType="Both grasses allowed",Management="Ungrazed",
+                                        Location="ARL",Lat=43.0318,Lon=-89.3539,agbiom="NA",grazedbiom="NA",l3agbiomfrac="NA")
+mix_ung_ARL_daily_C3_df <- data.frame(day=date,PFT="C3 Grass",biomass=mix_ung_ARL_biomass[12,],cbiol=mix_ung_ARL_cbiol[12,],
+                                        cbios=mix_ung_ARL_cbios[12,],cbiog=mix_ung_ARL_cbiog[12,],cbior=mix_ung_ARL_cbior[12,],
+                                        plai=mix_ung_ARL_plai[12,],SimulationType="Both grasses allowed",Management="Ungrazed",
+                                        Location="ARL",Lat=43.0318,Lon=-89.3539,agbiom="NA",grazedbiom="NA",l3agbiomfrac="NA")
+mix_ung_ARL_daily_both_df <- data.frame(day=date,PFT="Both Grasses",biomass="NA",cbiol="NA",cbios="NA",cbiog="NA",cbior="NA",
+                                           plai="NA",SimulationType="Both grasses allowed",Management="Ungrazed",Location="ARL",
+                                           Lat=43.0318,Lon=-89.3539,agbiom=mix_ung_ARL_agbiom,grazedbiom=mix_ung_ARL_grazedbiom,
+                                           l3agbiomfrac=mix_ung_ARL_l3agbiomfrac)
+mix_ung_ARL_daily_all_df <- rbind(mix_ung_ARL_daily_C4_df,mix_ung_ARL_daily_C3_df,mix_ung_ARL_daily_both_df)
+# Annual
+mix_ung_ARL_yearly_all_df <- data.frame(year=year,anpptot=mix_ung_ARL_anpptot,npptot=mix_ung_ARL_npptot,C4_npp=mix_ung_ARL_npp[11,],
+                                       C3_npp = mix_ung_ARL_npp[12,],SimulationType="Both grasses allowed",Management="Ungrazed",
+                                       Location="ARL",Lat=43.0318,Lon=-89.3539)
+### C3 Only
+## Ungrazed
+# Daily
+C3_ung_ARL_daily_all_df <- data.frame(day=date,PFT="C3 Grass",biomass=C3_ung_ARL_biomass[12,],cbiol=C3_ung_ARL_cbiol[12,],
+                                        cbios=C3_ung_ARL_cbios[12,],cbiog=C3_ung_ARL_cbiog[12,],cbior=C3_ung_ARL_cbior[12,],
+                                        plai=C3_ung_ARL_plai[12,],SimulationType="Only C3 grass allowed",Management="Ungrazed",
+                                        Location="ARL",Lat=43.0318,Lon=-89.3539,agbiom=C3_ung_ARL_agbiom,grazedbiom=C3_ung_ARL_grazedbiom,
+                                        l3agbiomfrac=C3_ung_ARL_l3agbiomfrac)
+# Annual
+C3_ung_ARL_yearly_all_df <- data.frame(year=year,anpptot=C3_ung_ARL_anpptot,npptot=C3_ung_ARL_npptot,C4_npp=C3_ung_ARL_npp[11,],
+                                       C3_npp = C3_ung_ARL_npp[12,],SimulationType="Only C3 grass allowed",Management="Ungrazed",
+                                       Location="ARL",Lat=43.0318,Lon=-89.3539)
+### C4 Only
+## Ungrazed
+# Daily
+C4_ung_ARL_daily_all_df <- data.frame(day=date,PFT="C4 Grass",biomass=C4_ung_ARL_biomass[11,],cbiol=C4_ung_ARL_cbiol[11,],
+                                        cbios=C4_ung_ARL_cbios[11,],cbiog=C4_ung_ARL_cbiog[11,],cbior=C4_ung_ARL_cbior[11,],
+                                        plai=C4_ung_ARL_plai[11,],SimulationType="Only C4 grass allowed",Management="Ungrazed",
+                                        Location="ARL",Lat=43.0318,Lon=-89.3539,agbiom=C4_ung_ARL_agbiom,grazedbiom=C4_ung_ARL_grazedbiom,
+                                        l3agbiomfrac=C4_ung_ARL_l3agbiomfrac)
+# Annual
+C4_ung_ARL_yearly_all_df <- data.frame(year=year,anpptot=C4_ung_ARL_anpptot,npptot=C4_ung_ARL_npptot,C4_npp=C4_ung_ARL_npp[11,],
+                                       C3_npp = C4_ung_ARL_npp[12,],SimulationType="Only C4 grass allowed",Management="Ungrazed",
+                                       Location="ARL",Lat=43.0318,Lon=-89.3539)
+# Combining all Arlington runs
+ARL_daily <- rbind(mix_ung_ARL_daily_all_df,C3_ung_ARL_daily_all_df,C4_ung_ARL_daily_all_df)
+ARL_yearly <- rbind(mix_ung_ARL_yearly_all_df,C3_ung_ARL_yearly_all_df,C4_ung_ARL_yearly_all_df)
+
+
+#### Bison Ridge Ranch runs
+### Mixed
+## Ungrazed
+# Daily
+mix_ung_BR_daily_C4_df <- data.frame(day=date,PFT="C4 Grass",biomass=mix_ung_BR_biomass[11,],cbiol=mix_ung_BR_cbiol[11,],
+                                        cbios=mix_ung_BR_cbios[11,],cbiog=mix_ung_BR_cbiog[11,],cbior=mix_ung_BR_cbior[11,],
+                                        plai=mix_ung_BR_plai[11,],SimulationType="Both grasses allowed",Management="Ungrazed",
+                                        Location="BR",Lat=43.7385,Lon=-89.4472,agbiom="NA",grazedbiom="NA",l3agbiomfrac="NA")
+mix_ung_BR_daily_C3_df <- data.frame(day=date,PFT="C3 Grass",biomass=mix_ung_BR_biomass[12,],cbiol=mix_ung_BR_cbiol[12,],
+                                        cbios=mix_ung_BR_cbios[12,],cbiog=mix_ung_BR_cbiog[12,],cbior=mix_ung_BR_cbior[12,],
+                                        plai=mix_ung_BR_plai[12,],SimulationType="Both grasses allowed",Management="Ungrazed",
+                                        Location="BR",Lat=43.7385,Lon=-89.4472,agbiom="NA",grazedbiom="NA",l3agbiomfrac="NA")
+mix_ung_BR_daily_both_df <- data.frame(day=date,PFT="Both Grasses",biomass="NA",cbiol="NA",cbios="NA",cbiog="NA",cbior="NA",
+                                           plai="NA",SimulationType="Both grasses allowed",Management="Ungrazed",Location="BR",
+                                           Lat=43.7385,Lon=-89.4472,agbiom=mix_ung_BR_agbiom,grazedbiom=mix_ung_BR_grazedbiom,
+                                           l3agbiomfrac=mix_ung_BR_l3agbiomfrac)
+mix_ung_BR_daily_all_df <- rbind(mix_ung_BR_daily_C4_df,mix_ung_BR_daily_C3_df,mix_ung_BR_daily_both_df)
+# Annual
+mix_ung_BR_yearly_all_df <- data.frame(year=year,anpptot=mix_ung_BR_anpptot,npptot=mix_ung_BR_npptot,C4_npp=mix_ung_BR_npp[11,],
+                                       C3_npp = mix_ung_BR_npp[12,],SimulationType="Both grasses allowed",Management="Ungrazed",
+                                       Location="BR",Lat=43.7385,Lon=-89.4472)
+### C3 Only
+## Ungrazed
+# Daily
+C3_ung_BR_daily_all_df <- data.frame(day=date,PFT="C3 Grass",biomass=C3_ung_BR_biomass[12,],cbiol=C3_ung_BR_cbiol[12,],
+                                        cbios=C3_ung_BR_cbios[12,],cbiog=C3_ung_BR_cbiog[12,],cbior=C3_ung_BR_cbior[12,],
+                                        plai=C3_ung_BR_plai[12,],SimulationType="Only C3 grass allowed",Management="Ungrazed",
+                                        Location="BR",Lat=43.7385,Lon=-89.4472,agbiom=C3_ung_BR_agbiom,grazedbiom=C3_ung_BR_grazedbiom,
+                                        l3agbiomfrac=C3_ung_BR_l3agbiomfrac)
+# Annual
+C3_ung_BR_yearly_all_df <- data.frame(year=year,anpptot=C3_ung_BR_anpptot,npptot=C3_ung_BR_npptot,C4_npp=C3_ung_BR_npp[11,],
+                                       C3_npp = C3_ung_BR_npp[12,],SimulationType="Only C3 grass allowed",Management="Ungrazed",
+                                       Location="BR",Lat=43.7385,Lon=-89.4472)
+### C4 Only
+## Ungrazed
+# Daily
+C4_ung_BR_daily_all_df <- data.frame(day=date,PFT="C4 Grass",biomass=C4_ung_BR_biomass[11,],cbiol=C4_ung_BR_cbiol[11,],
+                                        cbios=C4_ung_BR_cbios[11,],cbiog=C4_ung_BR_cbiog[11,],cbior=C4_ung_BR_cbior[11,],
+                                        plai=C4_ung_BR_plai[11,],SimulationType="Only C4 grass allowed",Management="Ungrazed",
+                                        Location="BR",Lat=43.7385,Lon=-89.4472,agbiom=C4_ung_BR_agbiom,grazedbiom=C4_ung_BR_grazedbiom,
+                                        l3agbiomfrac=C4_ung_BR_l3agbiomfrac)
+# Annual
+C4_ung_BR_yearly_all_df <- data.frame(year=year,anpptot=C4_ung_BR_anpptot,npptot=C4_ung_BR_npptot,C4_npp=C4_ung_BR_npp[11,],
+                                       C3_npp = C4_ung_BR_npp[12,],SimulationType="Only C4 grass allowed",Management="Ungrazed",
+                                       Location="BR",Lat=43.7385,Lon=-89.4472)
+# Combining all BR ranch runs
+BR_daily <- rbind(mix_ung_BR_daily_all_df,C3_ung_BR_daily_all_df,C4_ung_BR_daily_all_df)
+BR_yearly <- rbind(mix_ung_BR_yearly_all_df,C3_ung_BR_yearly_all_df,C4_ung_BR_yearly_all_df)
+
+
+#### Franbrook Farm runs
+### Mixed
+## Ungrazed
+# Daily
+mix_ung_FF_daily_C4_df <- data.frame(day=date,PFT="C4 Grass",biomass=mix_ung_FF_biomass[11,],cbiol=mix_ung_FF_cbiol[11,],
+                                        cbios=mix_ung_FF_cbios[11,],cbiog=mix_ung_FF_cbiog[11,],cbior=mix_ung_FF_cbior[11,],
+                                        plai=mix_ung_FF_plai[11,],SimulationType="Both grasses allowed",Management="Ungrazed",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom="NA",grazedbiom="NA",l3agbiomfrac="NA")
+mix_ung_FF_daily_C3_df <- data.frame(day=date,PFT="C3 Grass",biomass=mix_ung_FF_biomass[12,],cbiol=mix_ung_FF_cbiol[12,],
+                                        cbios=mix_ung_FF_cbios[12,],cbiog=mix_ung_FF_cbiog[12,],cbior=mix_ung_FF_cbior[12,],
+                                        plai=mix_ung_FF_plai[12,],SimulationType="Both grasses allowed",Management="Ungrazed",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom="NA",grazedbiom="NA",l3agbiomfrac="NA")
+mix_ung_FF_daily_both_df <- data.frame(day=date,PFT="Both Grasses",biomass="NA",cbiol="NA",cbios="NA",cbiog="NA",cbior="NA",
+                                           plai="NA",SimulationType="Both grasses allowed",Management="Ungrazed",Location="FF",
+                                           Lat=42.73796,Lon=-89.75369,agbiom=mix_ung_FF_agbiom,grazedbiom=mix_ung_FF_grazedbiom,
+                                           l3agbiomfrac=mix_ung_FF_l3agbiomfrac)
+mix_ung_FF_daily_all_df <- rbind(mix_ung_FF_daily_C4_df,mix_ung_FF_daily_C3_df,mix_ung_FF_daily_both_df)
+# Annual
+mix_ung_FF_yearly_all_df <- data.frame(year=year,anpptot=mix_ung_FF_anpptot,npptot=mix_ung_FF_npptot,C4_npp=mix_ung_FF_npp[11,],
+                                       C3_npp = mix_ung_FF_npp[12,],SimulationType="Both grasses allowed",Management="Ungrazed",
+                                       Location="FF",Lat=42.73796,Lon=-89.75369)
+## 2-Day Rotation
+# Daily
+mix_rot2_FF_daily_C4_df <- data.frame(day=date,PFT="C4 Grass",biomass=mix_rot2_FF_biomass[11,],cbiol=mix_rot2_FF_cbiol[11,],
+                                        cbios=mix_rot2_FF_cbios[11,],cbiog=mix_rot2_FF_cbiog[11,],cbior=mix_rot2_FF_cbior[11,],
+                                        plai=mix_rot2_FF_plai[11,],SimulationType="Both grasses allowed",Management="2-Day Rotation",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom="NA",grazedbiom="NA",l3agbiomfrac="NA")
+mix_rot2_FF_daily_C3_df <- data.frame(day=date,PFT="C3 Grass",biomass=mix_rot2_FF_biomass[12,],cbiol=mix_rot2_FF_cbiol[12,],
+                                        cbios=mix_rot2_FF_cbios[12,],cbiog=mix_rot2_FF_cbiog[12,],cbior=mix_rot2_FF_cbior[12,],
+                                        plai=mix_rot2_FF_plai[12,],SimulationType="Both grasses allowed",Management="2-Day Rotation",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom="NA",grazedbiom="NA",l3agbiomfrac="NA")
+mix_rot2_FF_daily_both_df <- data.frame(day=date,PFT="Both Grasses",biomass="NA",cbiol="NA",cbios="NA",cbiog="NA",cbior="NA",
+                                           plai="NA",SimulationType="Both grasses allowed",Management="2-Day Rotation",Location="FF",
+                                           Lat=42.73796,Lon=-89.75369,agbiom=mix_rot2_FF_agbiom,grazedbiom=mix_rot2_FF_grazedbiom,
+                                           l3agbiomfrac=mix_rot2_FF_l3agbiomfrac)
+mix_rot2_FF_daily_all_df <- rbind(mix_rot2_FF_daily_C4_df,mix_rot2_FF_daily_C3_df,mix_rot2_FF_daily_both_df)
+# Annual
+mix_rot2_FF_yearly_all_df <- data.frame(year=year,anpptot=mix_rot2_FF_anpptot,npptot=mix_rot2_FF_npptot,C4_npp=mix_rot2_FF_npp[11,],
+                                       C3_npp = mix_rot2_FF_npp[12,],SimulationType="Both grasses allowed",Management="2-Day Rotation",
+                                       Location="FF",Lat=42.73796,Lon=-89.75369)
+## Continuous Grazing
+# Daily
+mix_cont_FF_daily_C4_df <- data.frame(day=date,PFT="C4 Grass",biomass=mix_cont_FF_biomass[11,],cbiol=mix_cont_FF_cbiol[11,],
+                                        cbios=mix_cont_FF_cbios[11,],cbiog=mix_cont_FF_cbiog[11,],cbior=mix_cont_FF_cbior[11,],
+                                        plai=mix_cont_FF_plai[11,],SimulationType="Both grasses allowed",Management="Continuous Grazing",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom="NA",grazedbiom="NA",l3agbiomfrac="NA")
+mix_cont_FF_daily_C3_df <- data.frame(day=date,PFT="C3 Grass",biomass=mix_cont_FF_biomass[12,],cbiol=mix_cont_FF_cbiol[12,],
+                                        cbios=mix_cont_FF_cbios[12,],cbiog=mix_cont_FF_cbiog[12,],cbior=mix_cont_FF_cbior[12,],
+                                        plai=mix_cont_FF_plai[12,],SimulationType="Both grasses allowed",Management="Continuous Grazing",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom="NA",grazedbiom="NA",l3agbiomfrac="NA")
+mix_cont_FF_daily_both_df <- data.frame(day=date,PFT="Both Grasses",biomass="NA",cbiol="NA",cbios="NA",cbiog="NA",cbior="NA",
+                                           plai="NA",SimulationType="Both grasses allowed",Management="Continuous Grazing",Location="FF",
+                                           Lat=42.73796,Lon=-89.75369,agbiom=mix_cont_FF_agbiom,grazedbiom=mix_cont_FF_grazedbiom,
+                                           l3agbiomfrac=mix_cont_FF_l3agbiomfrac)
+
+mix_cont_FF_daily_all_df <- rbind(mix_cont_FF_daily_C4_df,mix_cont_FF_daily_C3_df,mix_cont_FF_daily_both_df)
+# Annual
+mix_cont_FF_yearly_all_df <- data.frame(year=year,anpptot=mix_cont_FF_anpptot,npptot=mix_cont_FF_npptot,C4_npp=mix_cont_FF_npp[11,],
+                                       C3_npp = mix_cont_FF_npp[12,],SimulationType="Both grasses allowed",Management="Continuous Grazing",
+                                       Location="FF",Lat=42.73796,Lon=-89.75369)
+
+### C3 Only
+## Ungrazed
+# Daily
+C3_ung_FF_daily_all_df <- data.frame(day=date,PFT="C3 Grass",biomass=C3_ung_FF_biomass[12,],cbiol=C3_ung_FF_cbiol[12,],
+                                        cbios=C3_ung_FF_cbios[12,],cbiog=C3_ung_FF_cbiog[12,],cbior=C3_ung_FF_cbior[12,],
+                                        plai=C3_ung_FF_plai[12,],SimulationType="Only C3 grass allowed",Management="Ungrazed",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom=C3_ung_FF_agbiom,grazedbiom=C3_ung_FF_grazedbiom,
+                                        l3agbiomfrac=C3_ung_FF_l3agbiomfrac)
+# Annual
+C3_ung_FF_yearly_all_df <- data.frame(year=year,anpptot=C3_ung_FF_anpptot,npptot=C3_ung_FF_npptot,C4_npp=C3_ung_FF_npp[11,],
+                                       C3_npp = C3_ung_FF_npp[12,],SimulationType="Only C3 grass allowed",Management="Ungrazed",
+                                       Location="FF",Lat=42.73796,Lon=-89.75369)
+## 2-Day Rotation
+# Daily
+C3_rot2_FF_daily_all_df <- data.frame(day=date,PFT="C3 Grass",biomass=C3_rot2_FF_biomass[12,],cbiol=C3_rot2_FF_cbiol[12,],
+                                        cbios=C3_rot2_FF_cbios[12,],cbiog=C3_rot2_FF_cbiog[12,],cbior=C3_rot2_FF_cbior[12,],
+                                        plai=C3_rot2_FF_plai[12,],SimulationType="Only C3 grass allowed",Management="2-Day Rotation",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom=C3_rot2_FF_agbiom,grazedbiom=C3_rot2_FF_grazedbiom,
+                                        l3agbiomfrac=C3_rot2_FF_l3agbiomfrac)
+# Annual
+C3_rot2_FF_yearly_all_df <- data.frame(year=year,anpptot=C3_rot2_FF_anpptot,npptot=C3_rot2_FF_npptot,C4_npp=C3_rot2_FF_npp[11,],
+                                       C3_npp = C3_rot2_FF_npp[12,],SimulationType="Only C3 grass allowed",Management="2-Day Rotation",
+                                       Location="FF",Lat=42.73796,Lon=-89.75369)
+## Continuous
+C3_cont_FF_daily_all_df <- data.frame(day=date,PFT="C3 Grass",biomass=C3_cont_FF_biomass[12,],cbiol=C3_cont_FF_cbiol[12,],
+                                        cbios=C3_cont_FF_cbios[12,],cbiog=C3_cont_FF_cbiog[12,],cbior=C3_cont_FF_cbior[12,],
+                                        plai=C3_cont_FF_plai[12,],SimulationType="Only C3 grass allowed",Management="Continuous Grazing",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom=C3_cont_FF_agbiom,grazedbiom=C3_cont_FF_grazedbiom,
+                                        l3agbiomfrac=C3_cont_FF_l3agbiomfrac)
+# Annual
+C3_cont_FF_yearly_all_df <- data.frame(year=year,anpptot=C3_cont_FF_anpptot,npptot=C3_cont_FF_npptot,C4_npp=C3_cont_FF_npp[11,],
+                                       C3_npp = C3_cont_FF_npp[12,],SimulationType="Only C3 grass allowed",Management="Continuous Grazing",
+                                       Location="FF",Lat=42.73796,Lon=-89.75369)
+### C4 Only
+## Ungrazed
+# Daily
+C4_ung_FF_daily_all_df <- data.frame(day=date,PFT="C4 Grass",biomass=C4_ung_FF_biomass[11,],cbiol=C4_ung_FF_cbiol[11,],
+                                        cbios=C4_ung_FF_cbios[11,],cbiog=C4_ung_FF_cbiog[11,],cbior=C4_ung_FF_cbior[11,],
+                                        plai=C4_ung_FF_plai[11,],SimulationType="Only C4 grass allowed",Management="Ungrazed",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom=C4_ung_FF_agbiom,grazedbiom=C4_ung_FF_grazedbiom,
+                                        l3agbiomfrac=C4_ung_FF_l3agbiomfrac)
+# Annual
+C4_ung_FF_yearly_all_df <- data.frame(year=year,anpptot=C4_ung_FF_anpptot,npptot=C4_ung_FF_npptot,C4_npp=C4_ung_FF_npp[11,],
+                                       C3_npp = C4_ung_FF_npp[12,],SimulationType="Only C4 grass allowed",Management="Ungrazed",
+                                       Location="FF",Lat=42.73796,Lon=-89.75369)
+## 2-Day Rotation
+# Daily
+C4_rot2_FF_daily_all_df <- data.frame(day=date,PFT="C4 Grass",biomass=C4_rot2_FF_biomass[11,],cbiol=C4_rot2_FF_cbiol[11,],
+                                        cbios=C4_rot2_FF_cbios[11,],cbiog=C4_rot2_FF_cbiog[11,],cbior=C4_rot2_FF_cbior[11,],
+                                        plai=C4_rot2_FF_plai[11,],SimulationType="Only C4 grass allowed",Management="2-Day Rotation",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom=C4_rot2_FF_agbiom,grazedbiom=C4_rot2_FF_grazedbiom,
+                                        l3agbiomfrac=C4_rot2_FF_l3agbiomfrac)
+# Annual
+C4_rot2_FF_yearly_all_df <- data.frame(year=year,anpptot=C4_rot2_FF_anpptot,npptot=C4_rot2_FF_npptot,C4_npp=C4_rot2_FF_npp[11,],
+                                       C3_npp = C4_rot2_FF_npp[12,],SimulationType="Only C4 grass allowed",Management="2-Day Rotation",
+                                       Location="FF",Lat=42.73796,Lon=-89.75369)
+## Continuous Grazing
+C4_cont_FF_daily_all_df <- data.frame(day=date,PFT="C4 Grass",biomass=C4_cont_FF_biomass[11,],cbiol=C4_cont_FF_cbiol[11,],
+                                        cbios=C4_cont_FF_cbios[11,],cbiog=C4_cont_FF_cbiog[11,],cbior=C4_cont_FF_cbior[11,],
+                                        plai=C4_cont_FF_plai[11,],SimulationType="Only C4 grass allowed",Management="Continuous Grazing",
+                                        Location="FF",Lat=42.73796,Lon=-89.75369,agbiom=C4_cont_FF_agbiom,grazedbiom=C4_cont_FF_grazedbiom,
+                                        l3agbiomfrac=C4_cont_FF_l3agbiomfrac)
+# Annual
+C4_cont_FF_yearly_all_df <- data.frame(year=year,anpptot=C4_cont_FF_anpptot,npptot=C4_cont_FF_npptot,C4_npp=C4_cont_FF_npp[11,],
+                                       C3_npp = C4_cont_FF_npp[12,],SimulationType="Only C4 grass allowed",Management="Continuous Grazing",
+                                       Location="FF",Lat=42.73796,Lon=-89.75369)
+# Combining all Franbrook Farm runs
+FF_daily <- rbind(mix_ung_FF_daily_all_df,mix_rot2_FF_daily_all_df,mix_cont_FF_daily_all_df,
+                  C3_ung_FF_daily_all_df,C3_rot2_FF_daily_all_df,C3_cont_FF_daily_all_df,
+                  C4_ung_FF_daily_all_df,C4_rot2_FF_daily_all_df,C4_cont_FF_daily_all_df)
+FF_yearly <- rbind(mix_ung_FF_yearly_all_df,mix_rot2_FF_yearly_all_df,mix_cont_FF_yearly_all_df,
+                  C3_ung_FF_yearly_all_df,C3_rot2_FF_yearly_all_df,C3_cont_FF_yearly_all_df,
+                  C4_ung_FF_yearly_all_df,C4_rot2_FF_yearly_all_df,C4_cont_FF_yearly_all_df)
+
+
+ARL_BR_FF_daily <- rbind(ARL_daily,BR_daily,FF_daily)
+write.csv(ARL_BR_FF_daily, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/ARL_BR_FF_daily.csv", row.names=FALSE)
+ARL_BR_FF_yearly <- rbind(ARL_yearly,BR_yearly,FF_yearly)
+write.csv(ARL_BR_FF_yearly, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/ARL_BR_FF_yearly.csv", row.names=FALSE)
+```
+
+```{r}
+###### Graphing
+
+##### Setting working directory
+setwd("/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis")
+
+# Reading in cleaned dataframes
+ARL_BR_FF_daily <- read_csv("ARL_BR_FF_daily.csv")
+ARL_BR_FF_yearly <- read_csv("ARL_BR_FF_yearly.csv")
+
+# Graph of different biomass pools
+ARL_biomass_pools <- ARL_BR_FF_daily %>%
+  mutate(Leaf = cbiol/biomass) %>%
+  mutate(Stem = cbios/biomass) %>%
+  mutate(Reproductive = cbiog/biomass) %>%
+  mutate(Root = cbior/biomass) %>%
+  filter(Location == "ARL") %>%
+  filter(Date >= '2021-01-01') %>%
+  filter(PFT != "Both Grasses") %>%
+  dplyr::select(Leaf,Stem,Reproductive,Root,PFT,SimulationType,Date) %>%
+  melt(value.name='Ratio', id=c('PFT','SimulationType','Date')) %>%
+  rename(Pool = variable)
+ARL_biomass_pools_C3 <- ARL_biomass_pools %>%
+  filter(PFT == "C3 Grass") %>%
+  filter(SimulationType != "Only C4 grass allowed")
+ARL_biomass_pools_C4 <- ARL_biomass_pools %>%
+  filter(PFT == "C4 Grass") %>%
+  filter(SimulationType != "Only C3 grass allowed")
+ARL_biomass_pools <- rbind(ARL_biomass_pools_C3, ARL_biomass_pools_C4)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Biomass_Partitioning_ARL_Graph.tiff", units="in", height=5, width=10, res=300)
+ggplot(data=ARL_biomass_pools, aes(x=Date,y=Ratio)) + geom_line(aes(col=Pool)) +
+  xlab("Date") + ggtitle("Biomass Partitioning at Arlington in 2021") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Ratio of Biomass Pool to Total Biomass (kg/m2)") + facet_wrap(~PFT+SimulationType)
+
+# Graph of C3 ratio over time for ungrazed at ARL and BR
+ARL_BR_bothgrass_df <- ARL_BR_FF_daily %>%
+  filter(Location != "FF") %>%
+  filter(PFT == "Both Grasses") %>%
+  filter(Date >= '1979-01-01') %>%
+  filter(l3agbiomfrac != "NaN")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/C3_Ratio_Graph_Ungrazed.tiff", units="in", height=6, width=8, res=300)
+ggplot(data=ARL_BR_bothgrass_df, aes(x=Date,y=l3agbiomfrac)) + geom_line(aes(col=Location)) +
+  ggtitle("Simulated Ratio of C3 ANPP to Total ANPP in Ungrazed Mixed Grasslands") +
+  ylab("Ratio of C3 ANPP to Total ANPP") + xlab("Year") + theme(plot.title=element_text(size=15),
+  axis.text=element_text(size=10),axis.title=element_text(size=12))
+
+# Graphs of LAI across different grazing management regimes at FF
+FF_biomass_C3_C4 <- ARL_BR_FF_daily %>%
+  filter(Location == "FF") %>%
+  filter(Date >= '2021-01-01') %>%
+  filter(PFT != "Both Grasses") %>%
+  filter(SimulationType == "Both grasses allowed")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/LAI_Grazing_FF_Graph_Mixed.tiff", units="in", height=5, width=9, res=300)
+ggplot(data=FF_biomass_C3_C4,aes(x=Date,y=plai)) + geom_line(aes(col=PFT)) +
+  ggtitle("Daily Leaf Area Index by Management at Franbrook Farm in 2021 - Mixed Grassland") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2/m2)") + xlab("Date") + facet_wrap(~Management)
+FF_biomass_C3 <- ARL_BR_FF_daily %>%
+  filter(Location == "FF") %>%
+  filter(Date >= '2021-01-01') %>%
+  filter(PFT == "C3 Grass") %>%
+  filter(SimulationType == "Only C3 grass allowed")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/LAI_Grazing_FF_Graph_C3.tiff", units="in", height=5, width=9, res=300)
+ggplot(data=FF_biomass_C3,aes(x=Date,y=plai)) + geom_line(aes(col=PFT)) +
+  ggtitle("Daily Leaf Area Index by Management at Franbrook Farm in 2021 - C3 Only") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2/m2)") + xlab("Date") + facet_wrap(~Management)
+FF_biomass_C4 <- ARL_BR_FF_daily %>%
+  filter(Location == "FF") %>%
+  filter(Date >= '2021-01-01') %>%
+  filter(PFT == "C4 Grass") %>%
+  filter(SimulationType == "Only C4 grass allowed")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/LAI_Grazing_FF_Graph_C4.tiff", units="in", height=5, width=9, res=300)
+ggplot(data=FF_biomass_C4,aes(x=Date,y=plai)) + geom_line(aes(col=PFT)) +
+  ggtitle("Daily Leaf Area Index by Management at Franbrook Farm in 2021 - C4 Only") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2/m2)") + xlab("Date") + facet_wrap(~Management)
+
+# Graph of yearly NPP comparisons for different grass types
+ARL_BR_FF_yearly_NPP <- ARL_BR_FF_yearly %>%
+  filter(Year >= 1979) %>%
+  filter(Location == "FF")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/NPPtot_Grazing_FF_Graph.tiff", units="in", height=5, width=10, res=300)
+ggplot(data=ARL_BR_FF_yearly, aes(x=Year,y=npptot)) + geom_line(aes(col=Management)) +
+  ggtitle("Simulated Total Net Primary Productivity Across Management and Grass Type at Franbrook Farm") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Total Net Primary Productivity (kg/m2)") + facet_wrap(~SimulationType)
+
+# Graph of C3 ratio over time for grazing at FF
+FF_daily_both <- ARL_BR_FF_daily %>%
+  filter(Date >= '1979-01-01') %>%
+  filter(Location == "FF") %>%
+  filter(PFT == "Both Grasses") %>%
+  filter(l3agbiomfrac != "NaN")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/C3_Ratio_Graph_Grazing.tiff", units="in", height=6, width=10, res=300)
+ggplot(data=FF_daily_both, aes(x=Date,y=l3agbiomfrac)) + geom_line(aes(col=Management)) +
+  ggtitle("Simulated Ratio of C3 ANPP to Total ANPP across Grass Management at Franbrook Farm") +
+  ylab("Ratio of C3 ANPP to Total NPP") + xlab("Year") + theme(plot.title=element_text(size=15),
+  axis.text=element_text(size=10),axis.title=element_text(size=12)) + facet_wrap(~Management) + theme(legend.position="none")
+view(FF_daily_both)
+```
+
+```{r}
+###### Validation
+
+##### Setting working directory
+setwd("/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis")
+
+
+##### Reading in cleaned dataframes
+ARL_BR_FF_daily <- read_csv("ARL_BR_FF_daily.csv")
+ARL_BR_FF_yearly <- read_csv("ARL_BR_FF_yearly.csv")
+# Reading in validation dataframes
+ARL_BR_val <- read_csv("Kummel_ARL_BR_ANPP 07_08 data.csv")
+FF_val <- read_csv("Oates_FF_NPP 06_07 data.csv", skip=5)
+
+
+##### Creating standard error function
+calcSE<-function(x){
+  x <- x[is.na(x)==F]
+  sd(x)/sqrt(length(x))
+}
+
+
+##### Subsetting data
+### Arlington and BR Ranch
+# Simulation data
+ARL_BR_daily <- ARL_BR_FF_daily %>%
+  filter(Location != "FF") %>%
+  filter(Date >= '2007-01-01' & Date <= '2009-01-01') %>%
+  dplyr::select(Date,PFT,SimulationType,Location,agbiom,l3agbiomfrac)
+ARL_BR_daily_C3 <- ARL_BR_daily %>%
+  filter(PFT == "C3 Grass") %>%
+  filter(SimulationType != "Only C4 grass allowed")
+ARL_BR_daily_C4 <- ARL_BR_daily %>%
+  filter(PFT == "C4 Grass") %>%
+  filter(SimulationType != "Only C3 grass allowed")
+ARL_BR_daily_both <- ARL_BR_daily %>%
+  filter(PFT == "Both Grasses")
+ARL_BR_daily <- rbind(ARL_BR_daily_C3, ARL_BR_daily_C4, ARL_BR_daily_both)
+ARL_BR_daily <- ARL_BR_daily %>%
+  filter(agbiom != "NA") %>%
+  mutate(agbiom = agbiom/(1-0.45)) %>% # Converting from kg C m2 yr-1 to kg m2 yr-1
+  rename(anpp_kg_m2 = agbiom)
+ARL_BR_daily_both <- ARL_BR_daily %>%
+  filter(SimulationType == "Both grasses allowed") %>%
+  dplyr::select(-PFT,-SimulationType) %>%
+  filter(l3agbiomfrac != "NaN")
+ARL_BR_daily_C3 <- ARL_BR_daily %>%
+  filter(SimulationType == "Only C3 grass allowed") %>%
+  dplyr::select(-PFT,-SimulationType) %>%
+  filter(l3agbiomfrac != "NaN")
+ARL_BR_daily_C4 <- ARL_BR_daily %>%
+  filter(SimulationType == "Only C4 grass allowed") %>%
+  dplyr::select(-PFT,-SimulationType) %>%
+  filter(l3agbiomfrac != "NaN")
+view(ARL_BR_daily_C3)
+view(ARL_BR_daily_C4)
+view(ARL_BR_daily_both)
+
+# Validation data
+ARL_BR_val_recoded <- ARL_BR_val %>%
+  mutate(l3agbiomfrac = (proportionCSgrass / (proportionCSgrass + proportionWSgrass))) %>%
+  mutate(Date = case_when(
+    Notes == "June-October Harvest Timing" ~ "2007-10-01",
+    Notes == "warm season= indian grass/big blue stem, May -August Harvest Duration" ~ "2007-08-01",
+    Notes == "Late May- Late October Harvest Timing" ~ "2008-10-21",
+    Notes == "June-November Harvest Duration" ~ "2008-11-01")) %>%
+  mutate(Date = as.Date(Date)) %>%
+  mutate(Location = case_when(
+    City == "Arlington, WI" ~ "ARL",
+    City == "BR Ranch" ~ "BR")) %>%
+  mutate(Year = as.factor(Year)) %>%
+  dplyr::select(Date,Year,Location,anpp_kg_m2_yr,l3agbiomfrac)
+ARL_BR_val_recoded_C3 <- ARL_BR_val_recoded %>%
+  filter(l3agbiomfrac >= 0.9)
+ARL_BR_val_recoded_C4 <- ARL_BR_val_recoded %>%
+  filter(l3agbiomfrac <= 0.1)
+
+
+### Franbrook Farm
+# Simulation data
+FF_daily_C3 <- ARL_BR_FF_daily %>%
+  filter(Location == "FF") %>%
+  filter(Date >= '2006-01-01' & Date <= '2008-01-01') %>%
+  dplyr::select(Date,Location,PFT,SimulationType,Management,plai,agbiom,grazedbiom,l3agbiomfrac) %>%
+  filter(agbiom != "NA") %>%
+  filter(l3agbiomfrac != "NaN") %>%
+  filter(SimulationType == "Only C3 grass allowed") %>%
+  filter(plai > 0) %>%
+  mutate(agbiom = agbiom/0.45) # Converting from kg C m2 yr-1 to kg m2 yr-1
+FF_daily_C3_ung <- FF_daily_C3 %>%
+  filter(Management == "Ungrazed")
+FF_daily_C3_rot2 <- FF_daily_C3 %>%
+  filter(Management == "2-Day Rotation")
+FF_daily_C3_cont <- FF_daily_C3 %>%
+  filter(Management == "Continuous Grazing")
+
+FF_daily_C3 
+  
+view(FF_daily_C3_cont)
+# Validation data
+view(FF_val_recoded)
+FF_val_recoded <- FF_val %>%
+  mutate(agbiom = g.m2 / 1000)
+FF_val_recoded_ung <- FF_val_recoded %>%
+  filter(treatment == "NONE") %>%
+  mutate(treatment = recode(treatment, "NONE" = "Ungrazed")) %>%
+  group_by(date) %>%
+  mutate(mean_agbiom = mean(agbiom)) %>%
+  mutate(SE_agbiom = calcSE(agbiom)) %>%
+  mutate(mean_lai = mean(`final LAI`)) %>%
+  mutate(SE_lai = calcSE(`final LAI`))
+FF_val_recoded_rot2 <- FF_val_recoded %>%
+  filter(treatment == "MIRG") %>%
+  mutate(treatment = recode(treatment, "MIRG" = "2-Day Rotation")) %>%
+  group_by(date) %>%
+  mutate(mean_agbiom = mean(agbiom)) %>%
+  mutate(SE_agbiom = calcSE(agbiom)) %>%
+  mutate(mean_lai = mean(`final LAI`)) %>%
+  mutate(SE_lai = calcSE(`final LAI`))
+FF_val_recoded_cont <- FF_val_recoded %>%
+  filter(treatment == "CONT") %>%
+  mutate(treatment = recode(treatment, "CONT" = "Continuous Grazing")) %>%
+  group_by(date) %>%
+  mutate(mean_agbiom = mean(agbiom)) %>%
+  mutate(SE_agbiom = calcSE(agbiom)) %>%
+  mutate(mean_lai = mean(`final LAI`)) %>%
+  mutate(SE_lai = calcSE(`final LAI`))
+FF_val_recoded_recombined <- rbind(FF_val_recoded_ung, FF_val_recoded_rot2, FF_val_recoded_cont)
+FF_val_recoded_recombined <- FF_val_recoded_recombined %>%
+  distinct(date, treatment, mean_agbiom, SE_agbiom, mean_lai, SE_lai) %>%
+  mutate("Simulation/Observed" = "Observed")
+
+
+##### Validation analyses
+#### Arlington and BR Ranch
+### Means
+ARL_BR_val_recoded <- ARL_BR_val_recoded %>%
+  group_by(Year,Location) %>%
+  mutate(mean_anpp = mean(anpp_kg_m2_yr)) %>%
+  mutate(SE_anpp = calcSE(anpp_kg_m2_yr)) %>%
+  mutate(mean_l3agbiomfrac = mean(l3agbiomfrac)) %>%
+  mutate(SE_l3agbiomfrac = calcSE(l3agbiomfrac))
+view(ARL_BR_val_recoded)
+        
+### ANPP analyses
+# Simulation: Both grasses allowed, Validation: full Kummel data
+tdStats(m=ARL_BR_daily_both$anpp_kg_m2, o=ARL_BR_val_recoded$anpp_kg_m2_yr, "mbe") # -0.2034257
+
+# Simulation: Only C3 grasses allowed, Validation: full Kummel data
+tdStats(m=ARL_BR_daily_both$anpp_kg_m2, o=ARL_BR_val_recoded_C3$anpp_kg_m2_yr, "mbe") # -0.02235221
+# Simulation: Only C3 grasses allowed, Validation: >= 90% C3 grass Kummel data
+tdStats(m=ARL_BR_daily_C3$anpp_kg_m2, o=ARL_BR_val_recoded_C3$anpp_kg_m2_yr, "mbe") # -0.0810716
+# Simulation: Only C4 grasses allowed, Validation: >= 90% C4 grass Kummel data
+tdStats(m=ARL_BR_daily_C4$anpp_kg_m2, o=ARL_BR_val_recoded_C4$anpp_kg_m2_yr, "mbe") # -0.1617621
+# Fraction of C3 grass / (C3 and C4 grasses)
+# Both grasses, full Kummel data
+tdStats(m=ARL_BR_daily_both$l3agbiomfrac, o=ARL_BR_val_recoded$l3agbiomfrac, "mbe") # 0.4223466
+
+#### Franbrook Farm
+### LAI graphs
+FF_val_recoded_recombined_sim <-
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Sim_LAI_FF", units="in", height=4, width=7, res=300)
+ggplot(FF_daily_C3, aes(x=Date, y=plai)) + geom_line(aes(col=Management)) +
+  ylab("Leaf Area Index (m2 m-2)") + ggtitle("Simulated LAI for Franbrook Farm from 2006-2007")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_LAI_FF", units="in", height=4, width=7, res=300)
+ggplot(FF_val_recoded_recombined, aes(x=date, y=mean_lai)) + geom_line(aes(col=treatment)) + 
+  geom_errorbar(aes(ymin=mean_lai-SE_lai, ymax=mean_lai+SE_lai), width=.2) +
+  ylab("Mean Leaf Area Index (m2 m-2)") + xlab("Date") +
+  ggtitle("Observed Mean LAI for Franbrook Farm from 2006-2007") + labs(col="Management")
+### agbiom graphs
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Sim_agbiom_FF", units="in", height=4, width=7, res=300)
+ggplot(FF_daily_C3, aes(x=Date, y=agbiom)) + geom_line(aes(col=Management)) +
+  ylab("Aboveground Biomass (kg m2 yr-1)") + ggtitle("Simulated Aboveground Biomass for Franbrook Farm from 2006-2007")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_agbiom_FF", units="in", height=4, width=7, res=300)
+ggplot(FF_val_recoded_recombined, aes(x=date, y=mean_agbiom)) + geom_line(aes(col=treatment)) + 
+  geom_errorbar(aes(ymin=mean_agbiom-SE_agbiom, ymax=mean_agbiom+SE_agbiom), width=.2) +
+  ylab("Aboveground Biomass (kg m2 yr-1)") + xlab("Date") +
+  ggtitle("Observed Aboveground Biomass for Franbrook Farm from 2006-2007") + labs(col="Management")
+
+
+### ANPP analyses - Simulation: Only C3 grasses allowed
+# Management : Ungrazed
+tdStats(m=FF_daily_C3_ung$anpp_kg_m2, o=FF_val_recoded_ung$anpp_kg_m2, "mbe") # -0.1849674
+#
+
+
+
+
+##### Validation graphs
+### Arlington and BR Ranch
+# ANPP Graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/ANPP_ARL_BR_Validation.tiff", units="in", height=4, width=7, res=300)
+ggplot(data=ARL_BR_val_recoded, aes(x=Location, y=anpp_kg_m2_yr)) + geom_boxplot(aes(col=Year)) + ylab("Aboveground Net Primary Productivity (kg m2 yr-1)") + ggtitle("Observed ANPP from 2007-2008 at Arlington and Bison Ridge Ranch") + ylim(0,1.6)
+### Franbrook Farm Graph
+# ANPP Graph
+
+
+
+```
+
+```{r}
+setwd("/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis")
+
+##### Creating standard error function
+calcSE<-function(x){
+  x <- x[is.na(x)==F]
+  sd(x)/sqrt(length(x))
+}
+
+### TRY data
+# Reading in full dataset
+try <- rtry_import("TRY database files/23814_orig_allvars.txt")
+try <- rtry_remove_dup(try)
+try <- rtry_exclude(try, ErrorRisk >= 3, baseOn = ObsDataID)
+
+try_traits <- try %>%
+  distinct(TraitID, .keep_all=TRUE)
+# Reading in taxonomic/photosynthetic pathway reference
+try_cat <- read_csv("TRY database files/Try2022127155028TRY_Categorical_Traits_Lookup_Table_2012_03_17_TestRelease.csv")
+try_cat_grass <- try_cat %>%
+  filter(Family == "Poaceae") %>%
+  filter(PhotosyntheticPathway != "NA") %>%
+  dplyr::select(AccSpeciesID,Family,PhotosyntheticPathway)
+
+# vcmax subset
+try_vc <- try %>%
+  filter(TraitID == 186) %>%
+  dplyr::select(SpeciesName,AccSpeciesID,AccSpeciesName,StdValue,UnitName,ErrorRisk) %>%
+  rename(vcmax = StdValue) %>%
+  group_by(AccSpeciesID) %>%
+  mutate(vcmax = mean(vcmax)) %>%
+  mutate(ErrorRisk = mean(ErrorRisk)) %>%
+  distinct(AccSpeciesID,AccSpeciesName,vcmax,UnitName,ErrorRisk)
+try_vc <- merge(try_vc, try_cat_grass, by="AccSpeciesID")
+try_vc <- try_vc %>%
+  distinct(AccSpeciesID, .keep_all=TRUE)
+try_vc_C3 <- try_vc %>%
+  filter(PhotosyntheticPathway == "C3") # 32 species
+mean(try_vc_C3$vcmax) # 49.339
+# The above roughly translates to a vcmax15 of 32.9
+calcSE(try_vc_C3$vcmax) # 5.916
+sd(try_vc_C3$vcmax) # 33.465
+mean(try_vc_C3$vcmax) - sd(try_vc_C3$vcmax) #15.874
+mean(try_vc_C3$vcmax) + sd(try_vc_C3$vcmax) # 82.804
+mean(try_vc_C3$vcmax) - (1.96 * calcSE(try_vc_C3$vcmax)) #37.744
+# The above roughly translates to a vcmax15 of 26.2
+mean(try_vc_C3$vcmax) + (1.96 * calcSE(try_vc_C3$vcmax)) # 60.934
+# The above roughly translates to a vcmax15 of 42.3
+
+try_vc_C4 <- try_vc %>%
+  filter(PhotosyntheticPathway == "C4") # 7 species
+mean(try_vc_C4$vcmax) # 57.96192
+calcSE(try_vc_C4$vcmax) # 7.853
+sd(try_vc_C4$vcmax) # 20.776
+mean(try_vc_C4$vcmax) - sd(try_vc_C4$vcmax) # 34.344
+mean(try_vc_C4$vcmax) + sd(try_vc_C4$vcmax) # 74.896
+#write_xlsx(try_vc, "try_vc.xlsx")
+
+# SLA subset
+try_SLA <- try %>%
+  filter(TraitID == 3117) %>%
+  dplyr::select(SpeciesName,AccSpeciesID,AccSpeciesName,StdValue,UnitName,ErrorRisk) %>%
+  rename(SLA = StdValue) %>%
+  filter(SLA != "NA") %>%
+  group_by(AccSpeciesID) %>%
+  mutate(SLA = mean(SLA)) %>%
+  mutate(ErrorRisk = mean(ErrorRisk)) %>%
+  distinct(AccSpeciesID,AccSpeciesName,SLA,UnitName,ErrorRisk)
+try_SLA <- merge(try_SLA, try_cat_grass, by="AccSpeciesID")
+try_SLA <- try_SLA %>%
+  distinct(AccSpeciesID, .keep_all=TRUE)
+try_SLA_C3 <- try_SLA %>%
+  filter(PhotosyntheticPathway == "C3") # 252 species
+mean(try_SLA_C3$SLA) # 19.0745
+C3_SLA_SD <- sd(try_SLA_C3$SLA) / (0.45) # Old: 17.131, New: 20.93777
+C3_SLA_mean <- (mean(try_SLA_C3$SLA))/(0.45) # Old: 34.681 m2 kg-1 C, New: 42.38778
+C3_SLA_SE <- (calcSE(try_SLA_C3$SLA))/(0.45) # Old: 1.079, New: 1.318955
+C3_SLA_mean - (1.96 * C3_SLA_SE) # Old: 32.566 = CI lower bound, New: 39.803
+C3_SLA_mean + (1.96 * C3_SLA_SE) # Old: 36.796 = CI upper bound, New: 44.97293
+C3_SLA_mean - (2 * C3_SLA_SD) # Old: 0.419 within two standard deviations, New: 0.51224
+C3_SLA_mean + (2 * C3_SLA_SD) # Old: 68.943 within two standard deviations, New: 84.26331
+C3_SLA_mean - C3_SLA_SD # Old: 17.55 within one standard deviation, New: 21.45001
+C3_SLA_mean + C3_SLA_SD # Old: 51.812 within one standard deviation, New: 63.32554
+
+try_SLA_C4 <- try_SLA %>%
+  filter(PhotosyntheticPathway == "C4") # 141 species
+mean(try_SLA_C4$SLA) # 17.45488 m2 kg-1 dry matter
+C4_SLA_SD <- sd(try_SLA_C4$SLA) / (0.45) # Old: 15.518 (SD), New: 18.96656
+C4_SLA_mean <- (mean(try_SLA_C4$SLA))/(0.45) # Old: 31.754 m2 kg-1 C, New: 38.81028
+C4_SLA_SE <- (calcSE(try_SLA_C4$SLA))/(0.45) # Old: 1.307, New: 1.597272
+C4_SLA_mean - (1.96 * C4_SLA_SE) # Old: 29.192 = CI lower bound, New: 35.67963
+C4_SLA_mean + (1.96 * C4_SLA_SE) #Old: 34.315 = CI upper bound, New: 41.94094
+C4_SLA_mean - (2 * C4_SLA_SD) #Old: 0.717 within two standard deviations, New: 0.8771701
+C4_SLA_mean + (2 * C4_SLA_SD) #Old: 62.79 within two standard deviations, New: 76.7434
+C4_SLA_mean - C4_SLA_SD #Old: 16.236 within one standard deviation, New: 19.84373
+C4_SLA_mean + C4_SLA_SD #Old: 47.272 within one standard deviation, New: 57.77684
+
+#write_xlsx(try_SLA, "try_SLA_coded.xlsx")
+
+### Re-reading in coded data
+try_vc_coded <- read_xlsx("try_vc_coded.xlsx")
+try_vc_coded_filt <- try_vc_coded %>%
+  filter(Grazable == "Yes") %>% # 40 to 24, C3 from 32 to 19, C4 from 7 to 5
+  filter(AnnualPerennial == "Perennial") %>% # 24 to 19, C3 from 19 to 14, C4 stays at 5, accounts for all "crops"
+  filter(InUS == "Yes") # 19 to 18, C3 from 14 to 13, C4 stays at 5
+
+try_vc_coded_C3 <- try_vc_coded_filt %>%
+  filter(PhotosyntheticPathway == "C3")
+mean(try_vc_coded_C3$vcmax15) # 26.81
+try_vc_coded_C4 <- try_vc_coded_filt %>%
+  filter(PhotosyntheticPathway == "C4")
+mean(try_vc_coded_C4$vcmax15) # 32.98
+view(try_vc_coded_C4)
+
+try_vc_coded_C3 <- try_vc_coded %>%
+  filter(PhotosyntheticPathway == "C3")
+mean(try_vc_coded_C3$vcmax15) # 32.653
+try_vc_coded_C4 <- try_vc_coded %>%
+  filter(PhotosyntheticPathway == "C4")
+mean(try_vc_coded_C4$vcmax15) # 36.743
+
+write_xlsx(try_vc_coded_filt, "try_vc_coded_filtered.xlsx")
+
+
+# Biomass partitioning data
+try_part <- rtry_import("TRY database files/27466.txt")
+try_part <- rtry_remove_dup(try_part)
+try_part <- rtry_exclude(try_part, ErrorRisk >= 3, baseOn = ObsDataID)
+try_part <- try_part %>%
+  filter(OriglName == "New stem C to new leaf C allocation")
+# try_part <- merge(try_part, try_cat_grass, by="AccSpeciesID") # 0 grass species, only grass functional types, have to filter manually
+try_part <- try_part %>%
+  filter(OriglName == "New stem C to new leaf C allocation") # 0 grass species for that too
+
+
+### BETYdb data
+bety_vc <- betydb_search("Vcmax")
+try_cat_grass_bety <- try_cat %>%
+  filter(Family == "Poaceae") %>%
+  filter(PhotosyntheticPathway != "NA") %>%
+  dplyr::select(AccSpeciesName,Family,PhotosyntheticPathway) %>%
+  rename(scientificname = AccSpeciesName)
+
+
+bety_vc_grass <- bety_vc %>%
+  group_by(scientificname) %>%
+  mutate(n_sum = sum(n)) %>%
+  mutate(meanXn = mean*n) %>%
+  mutate(mean_sum = sum(meanXn)) %>%
+  distinct(scientificname, .keep_all=TRUE) %>%
+  mutate(vcmax = mean_sum / n_sum)
+
+bety_SLA <- betydb_search("SLA")
+bety_SLA <- merge(bety_SLA, try_cat_grass_bety, by="scientificname")
+bety_SLA_grass <- bety_SLA %>%
+  group_by(scientificname) %>%
+  mutate(n_sum = sum(n)) %>%
+  mutate(meanXn = mean*n) %>%
+  mutate(mean_sum = sum(meanXn)) %>%
+  distinct(scientificname, .keep_all=TRUE) %>%
+  mutate(SLA = mean_sum / n_sum)
+
+bety_vc_grass_C3 <- bety_vc_grass %>%
+  filter(PhotosyntheticPathway == "C3") # 11 species
+mean(bety_vc_grass_C3$vcmax) # 46.07294
+
+bety_vc_grass_C4 <- bety_vc_grass %>%
+  filter(PhotosyntheticPathway == "C4") # 1 species (switchgrass)
+mean(bety_vc_grass_C4$vcmax) # 16.16571
+
+
+# Atkinson et al. 2016 data
+atk <- read_csv("41477_2016_BFnplants201638_MOESM4_ESM.csv")
+C3 <- atk %>%
+  filter(photosynthetic_pathway == "C3") #153 species
+```
+
+```{r}
+
+
+data.frame(mix_ung_ARL_cbiol)
+mix_ung_ARL <- nc_open("ARL-mix-ung-plai.nc")
+
+mix_ung_ARL_cbiol <- brick('ARL-mix-ung-plai.nc', varname='plai', level=12)
+
+mix_ung_ARL <- nc_open("ARL-mix-ung-plai.nc") # Ungrazed Arlington run
+mix_ung_ARL <- ncvar_get(mix_ung_ARL, "plai")
+summary(mix_ung_ARL_C3_C4)
+
+doy <- 1:22280
+df.11 <- data.frame(doy=doy, plai = mix_ung_ARL[11,], crop = "C4")
+
+df.12 <- data.frame(doy=doy, plai = mix_ung_ARL[12,], crop = "C3")
+df <- rbind(df.11, df.12)
+df
+
+ggplot(df.g,aes(x=time, y=sflux, color=Scen))+ geom_line(size=1)+
+  labs(title='Monthly streamflow at Grafton, IL', x='Date', y='Sflux (m3/s)') +
+  scale_x_continuous(breaks=seq(1,180,24),
+                     labels=c("2000-01-01","2002-01-01","2004-01-01","2006-01-01",
+                              "2008-01-01","2010-01-01","2012-01-01","2014-01-01"))
+
+mix_ung_ARL <- nc_open("ARL-mix-ung-biomass.nc") # Ungrazed Arlington run
+mix_ung_ARL_C3_C4 <- ncvar_get(ung_ARL, "l3agbiomfrac")
+
+ung_BR <- nc_open() # Ungrazed BR Ranch run
+ung_BR_C3_C4 <- ncvar_get(ung_BR, "C3/C4 Ratio")
+ung_BR_anpp <- ncvar_get(ung_BR, "agbiom")
+#Reading in csv files (validation data)
+
+
+
+# Code graveyard
+mix_ung_ARL_daily_C3_df <- mix_ung_ARL_daily_C3_C4_sep_df %>%
+  filter(PFT == "C3 Grass") %>%
+  mutate(agbiomC3 = cbiol + cbios + cbiog) %>%
+  dplyr::select(Date, PFT, agbiomC3)
+mix_ung_ARL_daily_C4_df <- mix_ung_ARL_daily_C3_C4_sep_df %>%
+  filter(PFT == "C4 Grass") %>%
+  mutate(agbiomC4 = cbiol + cbios + cbiog) %>%
+  dplyr::select(Date, PFT, agbiomC4)
+mix_ung_ARL_daily_C3_C4_comb_df <- cbind(mix_ung_ARL_daily_C3_df, mix_ung_ARL_daily_C4_df)
+mix_ung_ARL_daily_C3_C4_comb_df <- mix_ung_ARL_daily_C3_C4_comb_df[ -c(4,5)]
+mix_ung_ARL_daily_C3_C4_comb_df <- mix_ung_ARL_daily_C3_C4_comb_df %>%
+  mutate(agbiom = agbiomC3 + agbiomC4) %>%
+  mutate(l3agbiomfrac = agbiomC3 / agbiom)
+mix_ung_ARL_daily_C3_C4_comb_df <- mix_ung_ARL_daily_C3_C4_comb_df[ -c(2:4)]
+write.csv(mix_ung_ARL_daily_C3_C4_comb_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/mix_ung_ARL_daily_C3_C4_comb_df.csv", row.names=FALSE)
+
+
+mix_ung_ARL_yearly_C3_df <- data.frame()
+mix_ung_ARL_yearly_both_df <- data.frame()
+mix_ung_ARL_yearly_all_df <- rbind(mix_ung_ARL_yearly_C4_df,mix_ung_ARL_yearly_C3_df,mix_ung_ARL_yearly_both_df)
+mix_ung_ARL_anpptot_df <- data.frame(year=year,anpptot=mix_ung_ARL_anpptot,npptot = mix_ung_ARL_npptot,)
+mix_ung_ARL_npptot_df <- data.frame(year=year, npptot = mix_ung_ARL_npptot)
+mix_ung_ARL_npp_C4_df <- data.frame(year=year, C4_npp = mix_ung_ARL_npp[11,])
+mix_ung_ARL_npp_C3_df <- data.frame(year=year, C3_npp = mix_ung_ARL_npp[12,])
+mix_ung_ARL_yearly_df <- cbind(mix_ung_ARL_anpptot_df, mix_ung_ARL_npptot_df, mix_ung_ARL_npp_C4_df, mix_ung_ARL_npp_C3_df)
+mix_ung_ARL_yearly_df <- mix_ung_ARL_yearly_df[ -c(3,5,7)]
+write.csv(mix_ung_ARL_yearly_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/mix_ung_ARL_yearly_df.csv", row.names=FALSE)
+
+
+                   
+mix_ung_ARL_biomass_C3_df <- data.frame(day=date,PFT="C3 Grass",biomass=mix_ung_ARL_biomass[12,])
+mix_ung_ARL_biomass_C3_C4_df <- rbind(mix_ung_ARL_biomass_C3_df, mix_ung_ARL_biomass_C4_df)
+
+mix_ung_ARL_biomass_C4_df <- data.frame(day=date,PFT="C4 Grass",biomass=mix_ung_ARL_biomass[11,])
+mix_ung_ARL_biomass_C3_df <- data.frame(day=date,PFT="C3 Grass",biomass=mix_ung_ARL_biomass[12,])
+mix_ung_ARL_biomass_C3_C4_df <- rbind(mix_ung_ARL_biomass_C3_df, mix_ung_ARL_biomass_C4_df)
+
+mix_ung_ARL_cbiol_C4_df <- data.frame(day=date,PFT="C4 Grass",cbiol=mix_ung_ARL_cbiol[11,])
+mix_ung_ARL_cbiol_C3_df <- data.frame(day=date,PFT="C3 Grass",cbiol=mix_ung_ARL_cbiol[12,])
+mix_ung_ARL_cbiol_C3_C4_df <- rbind(mix_ung_ARL_cbiol_C3_df, mix_ung_ARL_cbiol_C4_df)
+
+mix_ung_ARL_cbios_C4_df <- data.frame(day=date,PFT="C4 Grass",cbios=mix_ung_ARL_cbios[11,])
+mix_ung_ARL_cbios_C3_df <- data.frame(day=date,PFT="C3 Grass",cbios=mix_ung_ARL_cbios[12,])
+mix_ung_ARL_cbios_C3_C4_df <- rbind(mix_ung_ARL_cbios_C3_df, mix_ung_ARL_cbios_C4_df)
+
+mix_ung_ARL_cbiog_C4_df <- data.frame(day=date,PFT="C4 Grass",cbiog=mix_ung_ARL_cbiog[11,])
+mix_ung_ARL_cbiog_C3_df <- data.frame(day=date,PFT="C3 Grass",cbiog=mix_ung_ARL_cbiog[12,])
+mix_ung_ARL_cbiog_C3_C4_df <- rbind(mix_ung_ARL_cbiog_C3_df, mix_ung_ARL_cbiog_C4_df)
+
+mix_ung_ARL_cbior_C4_df <- data.frame(day=date,PFT="C4 Grass",cbior=mix_ung_ARL_cbior[11,])
+mix_ung_ARL_cbior_C3_df <- data.frame(day=date,PFT="C3 Grass",cbior=mix_ung_ARL_cbior[12,])
+mix_ung_ARL_cbior_C3_C4_df <- rbind(mix_ung_ARL_cbior_C3_df, mix_ung_ARL_cbior_C4_df)
+
+mix_ung_ARL_plai_C4_df <- data.frame(day=date,PFT="C4 Grass",plai=mix_ung_ARL_plai[11,])
+mix_ung_ARL_plai_C3_df <- data.frame(day=date,PFT="C3 Grass",plai=mix_ung_ARL_plai[12,])
+mix_ung_ARL_plai_C3_C4_df <- rbind(mix_ung_ARL_plai_C3_df, mix_ung_ARL_plai_C4_df)
+
+mix_ung_ARL_daily_C3_C4_df <- cbind(mix_ung_ARL_biomass_C3_C4_df, mix_ung_ARL_cbiol_C3_C4_df, mix_ung_ARL_cbios_C3_C4_df,
+                                    mix_ung_ARL_cbiog_C3_C4_df, mix_ung_ARL_cbior_C3_C4_df, mix_ung_ARL_plai_C3_C4_df)
+mix_ung_ARL_daily_C3_C4_df <- mix_ung_ARL_daily_C3_C4_df[ -c(4,5,7,8,10,11,13,14,16,17)]
+mix_ung_ARL_daily_C3_C4_df_descriptors <- data.frame(day=date,SimulationType="Both grasses allowed",Management="Ungrazed",Location="ARL",
+                                                     Lat=43.0318,Lon=-89.3539)
+mix_ung_ARL_daily_C3_C4_df <- cbind(mix_ung_ARL_daily_C3_C4_df,mix_ung_ARL_daily_C3_C4_df_descriptors)
+mix_ung_ARL_daily_C3_C4_df <- mix_ung_ARL_daily_C3_C4_df[-9]
+view(mix_ung_ARL_daily_C3_C4_df)
+
+mix_ung_ARL_agbiom_mix_df <- data.frame(day=date,PFT="Both Grasses",biomass="NA",cbiol="NA",cbios="NA",cbiog="NA",cbior="NA",plai="NA",
+                                       SimulationType="Both grasses allowed",Management="Ungrazed",Location="ARL",Lat=43.0318,Lon=-89.3539,
+                                       agbiom=mix_ung_ARL_agbiom,grazedbiom=mix_ung_ARL_grazedbiom,l3agbiomfrac=mix_ung_ARL_l3agbiomfrac)
+view(mix_ung_ARL_agbiom_mix_df)
+mix_ung_ARL_grazedbiom_mix_df <- data.frame(day=date,PFT="Both Grasses",SimulationType="Both grasses allowed",Management="Ungrazed",Location="FF",grazedbiom=mix_ung_FF_grazedbiom)
+mix_ung_ARL_l3agbiomfrac_mix_df <- data.frame(day=date,PFT="Both Grasses",SimulationType="Both grasses allowed",Management="Ungrazed",Location="FF",l3agbiomfrac=mix_ung_FF_l3agbiomfrac)
+
+
+write.csv(mix_ung_ARL_daily_C3_C4_sep_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/mix_ung_ARL_daily_C3_C4_sep_df.csv", row.names=FALSE)
+
+## Annual
+mix_ung_ARL_anpptot_df <- data.frame(year=year, anpptot = mix_ung_ARL_anpptot)
+mix_ung_ARL_npptot_df <- data.frame(year=year, npptot = mix_ung_ARL_npptot)
+mix_ung_ARL_npp_C4_df <- data.frame(year=year, C4_npp = mix_ung_ARL_npp[11,])
+mix_ung_ARL_npp_C3_df <- data.frame(year=year, C3_npp = mix_ung_ARL_npp[12,])
+mix_ung_ARL_yearly_df <- cbind(mix_ung_ARL_anpptot_df, mix_ung_ARL_npptot_df, mix_ung_ARL_npp_C4_df, mix_ung_ARL_npp_C3_df)
+mix_ung_ARL_yearly_df <- mix_ung_ARL_yearly_df[ -c(3,5,7)]
+write.csv(mix_ung_ARL_yearly_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/mix_ung_ARL_yearly_df.csv", row.names=FALSE)
+
+
+
+
+#### Bison Ridge Ranch
+### Daily - Separate C3/C4 and Combined C3/C4
+mix_ung_BR_biomass_C4_df <- data.frame(day=date,PFT="C4 Grass",biomass=mix_ung_BR_biomass[11,])
+mix_ung_BR_biomass_C3_df <- data.frame(day=date,PFT="C3 Grass",biomass=mix_ung_BR_biomass[12,])
+mix_ung_BR_biomass_C3_C4_df <- rbind(mix_ung_BR_biomass_C3_df, mix_ung_BR_biomass_C4_df)
+
+mix_ung_BR_cbiol_C4_df <- data.frame(day=date,PFT="C4 Grass",cbiol=mix_ung_BR_cbiol[11,])
+mix_ung_BR_cbiol_C3_df <- data.frame(day=date,PFT="C3 Grass",cbiol=mix_ung_BR_cbiol[12,])
+mix_ung_BR_cbiol_C3_C4_df <- rbind(mix_ung_BR_cbiol_C3_df, mix_ung_BR_cbiol_C4_df)
+
+mix_ung_BR_cbios_C4_df <- data.frame(day=date,PFT="C4 Grass",cbios=mix_ung_BR_cbios[11,])
+mix_ung_BR_cbios_C3_df <- data.frame(day=date,PFT="C3 Grass",cbios=mix_ung_BR_cbios[12,])
+mix_ung_BR_cbios_C3_C4_df <- rbind(mix_ung_BR_cbios_C3_df, mix_ung_BR_cbios_C4_df)
+
+mix_ung_BR_cbiog_C4_df <- data.frame(day=date,PFT="C4 Grass",cbiog=mix_ung_BR_cbiog[11,])
+mix_ung_BR_cbiog_C3_df <- data.frame(day=date,PFT="C3 Grass",cbiog=mix_ung_BR_cbiog[12,])
+mix_ung_BR_cbiog_C3_C4_df <- rbind(mix_ung_BR_cbiog_C3_df, mix_ung_BR_cbiog_C4_df)
+
+mix_ung_BR_cbior_C4_df <- data.frame(day=date,PFT="C4 Grass",cbior=mix_ung_BR_cbior[11,])
+mix_ung_BR_cbior_C3_df <- data.frame(day=date,PFT="C3 Grass",cbior=mix_ung_BR_cbior[12,])
+mix_ung_BR_cbior_C3_C4_df <- rbind(mix_ung_BR_cbior_C3_df, mix_ung_BR_cbior_C4_df)
+
+mix_ung_BR_plai_C4_df <- data.frame(day=date,PFT="C4 Grass",plai=mix_ung_BR_plai[11,])
+mix_ung_BR_plai_C3_df <- data.frame(day=date,PFT="C3 Grass",plai=mix_ung_BR_plai[12,])
+mix_ung_BR_plai_C3_C4_df <- rbind(mix_ung_BR_plai_C3_df, mix_ung_BR_plai_C4_df)
+
+mix_ung_BR_daily_C3_C4_sep_df <- cbind(mix_ung_BR_biomass_C3_C4_df, mix_ung_BR_cbiol_C3_C4_df, mix_ung_BR_cbios_C3_C4_df,
+                                    mix_ung_BR_cbiog_C3_C4_df, mix_ung_BR_cbior_C3_C4_df, mix_ung_BR_plai_C3_C4_df)
+mix_ung_BR_daily_C3_C4_sep_df <- mix_ung_BR_daily_C3_C4_sep_df[ -c(4,5,7,8,10,11,13,14,16,17)]
+write.csv(mix_ung_BR_daily_C3_C4_sep_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/mix_ung_BR_daily_C3_C4_sep_df.csv", row.names=FALSE)
+
+
+
+### Annual
+mix_ung_BR_anpptot_df <- data.frame(year=year, anpptot = mix_ung_BR_anpptot)
+mix_ung_BR_npptot_df <- data.frame(year=year, npptot = mix_ung_BR_npptot)
+mix_ung_BR_npp_C4_df <- data.frame(year=year, C4_npp = mix_ung_BR_npp[11,])
+mix_ung_BR_npp_C3_df <- data.frame(year=year, C3_npp = mix_ung_BR_npp[12,])
+mix_ung_BR_yearly_df <- cbind(mix_ung_BR_anpptot_df, mix_ung_BR_npptot_df, mix_ung_BR_npp_C4_df, mix_ung_BR_npp_C3_df)
+mix_ung_BR_yearly_df <- mix_ung_BR_yearly_df[ -c(3,5,7)]
+write.csv(mix_ung_BR_yearly_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/mix_ung_BR_yearly_df.csv", row.names=FALSE)
+
+
+
+#### Franbrook Farm
+### Daily - Separate C3/C4 and Combined C3/C4
+mix_ung_FF_biomass_C4_df <- data.frame(day=date,PFT="C4 Grass",biomass=mix_ung_FF_biomass[11,])
+mix_ung_FF_biomass_C3_df <- data.frame(day=date,PFT="C3 Grass",biomass=mix_ung_FF_biomass[12,])
+mix_ung_FF_biomass_C3_C4_df <- rbind(mix_ung_FF_biomass_C3_df, mix_ung_FF_biomass_C4_df)
+
+mix_ung_FF_cbiol_C4_df <- data.frame(day=date,PFT="C4 Grass",cbiol=mix_ung_FF_cbiol[11,])
+mix_ung_FF_cbiol_C3_df <- data.frame(day=date,PFT="C3 Grass",cbiol=mix_ung_FF_cbiol[12,])
+mix_ung_FF_cbiol_C3_C4_df <- rbind(mix_ung_FF_cbiol_C3_df, mix_ung_FF_cbiol_C4_df)
+
+mix_ung_FF_cbios_C4_df <- data.frame(day=date,PFT="C4 Grass",cbios=mix_ung_FF_cbios[11,])
+mix_ung_FF_cbios_C3_df <- data.frame(day=date,PFT="C3 Grass",cbios=mix_ung_FF_cbios[12,])
+mix_ung_FF_cbios_C3_C4_df <- rbind(mix_ung_FF_cbios_C3_df, mix_ung_FF_cbios_C4_df)
+
+mix_ung_FF_cbiog_C4_df <- data.frame(day=date,PFT="C4 Grass",cbiog=mix_ung_FF_cbiog[11,])
+mix_ung_FF_cbiog_C3_df <- data.frame(day=date,PFT="C3 Grass",cbiog=mix_ung_FF_cbiog[12,])
+mix_ung_FF_cbiog_C3_C4_df <- rbind(mix_ung_FF_cbiog_C3_df, mix_ung_FF_cbiog_C4_df)
+
+mix_ung_FF_cbior_C4_df <- data.frame(day=date,PFT="C4 Grass",cbior=mix_ung_FF_cbior[11,])
+mix_ung_FF_cbior_C3_df <- data.frame(day=date,PFT="C3 Grass",cbior=mix_ung_FF_cbior[12,])
+mix_ung_FF_cbior_C3_C4_df <- rbind(mix_ung_FF_cbior_C3_df, mix_ung_FF_cbior_C4_df)
+
+mix_ung_FF_plai_C4_df <- data.frame(day=date,PFT="C4 Grass",plai=mix_ung_FF_plai[11,])
+mix_ung_FF_plai_C3_df <- data.frame(day=date,PFT="C3 Grass",plai=mix_ung_FF_plai[12,])
+mix_ung_FF_plai_C3_C4_df <- rbind(mix_ung_FF_plai_C3_df, mix_ung_FF_plai_C4_df)
+
+mix_ung_FF_agbiom_mix_df <- data.frame(day=date,PFT="Both Grasses",SimulationType="Both grasses allowed",Management="Ungrazed",Location="FF",agbiom=mix_ung_FF_agbiom)
+mix_ung_FF_grazedbiom_mix_df <- data.frame(day=date,PFT="Both Grasses",SimulationType="Both grasses allowed",Management="Ungrazed",Location="FF",grazedbiom=mix_ung_FF_grazedbiom)
+mix_ung_FF_l3agbiomfrac_mix_df <- data.frame(day=date,PFT="Both Grasses",SimulationType="Both grasses allowed",Management="Ungrazed",Location="FF",l3agbiomfrac=mix_ung_FF_l3agbiomfrac)
+
+
+
+mix_ung_FF_daily_C3_C4_sep_df <- cbind(mix_ung_FF_biomass_C3_C4_df, mix_ung_FF_cbiol_C3_C4_df, mix_ung_FF_cbios_C3_C4_df,
+                                    mix_ung_FF_cbiog_C3_C4_df, mix_ung_FF_cbior_C3_C4_df, mix_ung_FF_plai_C3_C4_df)
+#mix_ung_FF_daily_C3_C4_sep_df <- mix_ung_FF_daily_C3_C4_sep_df[ -c(4,5,7,8,10,11,13,14,16,17)]
+write.csv(mix_ung_FF_daily_C3_C4_sep_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/mix_ung_FF_daily_C3_C4_sep_df.csv", row.names=FALSE)
+
+
+write.csv(mix_ung_FF_daily_C3_C4_comb_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/mix_ung_FF_daily_C3_C4_comb_df.csv", row.names=FALSE)
+
+### Annual
+mix_ung_FF_anpptot_df <- data.frame(year=year, anpptot = mix_ung_FF_anpptot)
+mix_ung_FF_npptot_df <- data.frame(year=year, npptot = mix_ung_FF_npptot)
+mix_ung_FF_npp_C4_df <- data.frame(year=year, C4_npp = mix_ung_FF_npp[11,])
+mix_ung_FF_npp_C3_df <- data.frame(year=year, C3_npp = mix_ung_FF_npp[12,])
+mix_ung_FF_yearly_df <- cbind(mix_ung_FF_anpptot_df, mix_ung_FF_npptot_df, mix_ung_FF_npp_C4_df, mix_ung_FF_npp_C3_df)
+mix_ung_FF_yearly_df <- mix_ung_FF_yearly_df[ -c(3,5,7)]
+write.csv(mix_ung_FF_yearly_df, "/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/mix_ung_FF_yearly_df.csv", row.names=FALSE)
+
+```
+
+
+```{r}
+######### Old code vs new code dataset creation and graph
+
+setwd("/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis")
+
+##### Reading in day and year dataframes
+date <- read_csv("Date_daily.csv") # This includes every day from 1/1/1961 to 12/31/2021
+year <- read_csv("Year.csv") # This includes every year from 1961 to 2021
+
+### Old runs
+old_FF_biom_readin <- nc_open("old-FF-mix-ung-biomass.nc")
+old_FF_cbiol <- ncvar_get(old_FF_biom_readin, "cbiol")
+old_FF_cbios <- ncvar_get(old_FF_biom_readin, "cbios")
+old_FF_cbiog <- ncvar_get(old_FF_biom_readin, "cbiog")
+old_FF_cbior <- ncvar_get(old_FF_biom_readin, "cbior")
+old_FF_biomass <- ncvar_get(old_FF_biom_readin, "biomass")
+old_FF_plai_readin <- nc_open("FF-spinup-plai.nc")
+old_FF_plai <- ncvar_get(spinup_FF_plai_readin, "plai")
+spinup_FF_aet_d_readin <- nc_open("FF-spinup-aet-d.nc")
+spinup_FF_aet_d <- ncvar_get(spinup_FF_aet_d_readin, "aet")
+spinup_FF_wsoi_d_readin <- nc_open("FF-spinup-wsoi-d.nc")
+spinup_FF_wsoi_d <- ncvar_get(spinup_FF_wsoi_d_readin, "wsoi")
+# No PFT
+spinup_FF_pasture_readin <- nc_open("FF-spinup-pasture.nc")
+spinup_FF_agbiom <- ncvar_get(spinup_FF_pasture_readin, "agbiom")
+spinup_FF_panpp <- ncvar_get(spinup_FF_pasture_readin, "panpp")
+spinup_FF_pbnpp <- ncvar_get(spinup_FF_pasture_readin, "pbnpp")
+spinup_FF_grazedbiom <- ncvar_get(spinup_FF_pasture_readin, "grazedbiom")
+spinup_FF_l3agbiomfrac <- ncvar_get(spinup_FF_pasture_readin, "l3agbiomfrac")
+# Annual
+spinup_FF_npp_readin <- nc_open("FF-spinup-npp.nc")
+spinup_FF_anpptot <- ncvar_get(spinup_FF_npp_readin, "anpptot")
+spinup_FF_npptot <- ncvar_get(spinup_FF_npp_readin, "npptot")
+spinup_FF_npp <- ncvar_get(spinup_FF_npp_readin, "npp")
+spinup_FF_gsdays <- ncvar_get(spinup_FF_npp_readin, "gsdays")
+spinup_FF_aet_y_readin <- nc_open("FF-spinup-aet-y.nc")
+spinup_FF_aet_y <- ncvar_get(spinup_FF_aet_y_readin, "aet")
+spinup_FF_wsoi_y_readin <- nc_open("FF-spinup-wsoi-y.nc")
+spinup_FF_wsoi_y <- ncvar_get(spinup_FF_wsoi_y_readin, "wsoi")
+spinup_FF_vegtype0_readin <- nc_open("FF-spinup-vegtype0.nc")
+spinup_FF_vegtype0 <- ncvar_get(spinup_FF_vegtype0_readin, "vegtype0")
+spinup_FF_csoi_readin <- nc_open("FF-spinup-csoi.nc")
+spinup_FF_totcsoi <- ncvar_get(spinup_FF_csoi_readin, "totcsoi")
+
+```
+
+
+
+```{r}
+# Thesis code graveyard
+
+### LAI graphs
+#FF_val_recoded_recombined$date <- as.Date(FF_val_recoded_recombined$date)
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_LAI_FF.tiff", units="in", height=5, width=9, res=300)
+ggplot(FF_val_recoded_recombined, aes(x=date, y=mean_lai)) + geom_line(aes(col=treatment)) + 
+  geom_errorbar(aes(ymin=mean_lai-SE_lai, ymax=mean_lai+SE_lai), width=.2) +
+  ylab("Mean Leaf Area Index (m2 m-2)") + xlab("Date") + theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ggtitle("Observed Mean LAI at Franbrook Farm from 2006-2007") + labs(col="Management") +
+  scale_x_date(breaks = scales::breaks_pretty(8))
+
+# agbiom graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Obs_agbiom_FF.tiff", units="in", height=5, width=9, res=300)
+ggplot(FF_val_recoded_recombined, aes(x=date, y=mean_agbiom)) + geom_line(aes(col=treatment)) +
+  geom_errorbar(aes(ymin=mean_agbiom-SE_agbiom, ymax=mean_agbiom+SE_agbiom), width=.2) +
+  ylab("Aboveground Biomass (kg m-2)") + xlab("Date") + theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ggtitle("Observed Aboveground Biomass at Franbrook Farm from 2006-2007") +
+  labs(col="Management") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  coord_cartesian(ylim = c(0.0, 0.7)) + scale_y_continuous(breaks = scales::breaks_pretty(6))
+# LAI graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Sim_LAI_FF.tiff", units="in", height=5, width=9, res=300)
+ggplot(data=FF_daily_C3,aes(x=Date,y=plai)) + geom_line(aes(col=Management)) +
+  ggtitle("Simulated LAI at Franbrook Farm from 2006-2007") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8))
+
+
+# Graph of aboveground biomass for C3
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Sim_agbiom_FF.tiff", units="in", height=5, width=9, res=300)
+ggplot(data=FF_daily_C3,aes(x=Date,y=agbiom)) + geom_line(aes(col=Management)) +
+  ggtitle("Simulated Aboveground Biomass at Franbrook Farm from 2006-2007") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) + ylim(0,0.7) +
+  ylab("Aboveground Biomass (kg m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6))
+
+# LAI point graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Gen_vs_Oates_vs_Obs_LAI_point_FF.tiff", units="in", height=5, width=9, res=300)
+ggplot() + geom_point(data=FF_val_recoded_recombined_renamed_rot2, aes(x=Date, y=plai, col="blue")) +
+  geom_line(data=FF_daily_C3_rot2, aes(x=Date, y=plai, col="green")) +
+  geom_line(data=FF_daily_C3_rot2_oates, aes(x=Date, y=plai, col="red")) +
+  ggtitle("Generalized vs. Date-Aligned 2-Day Rotation Simulation at Franbrook Farm") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_discrete(name="Data Source", labels=c("Evaluation Data","Generalized Model","Date-Aligned Model"))
+# agbiom point graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Gen_vs_Oates_vs_Obs_agbiom_point_FF.tiff", units="in", height=5, width=9, res=300)
+ggplot() + geom_point(data=FF_val_recoded_recombined_renamed_rot2, aes(x=Date, y=agbiom, col="blue")) +
+  geom_line(data=FF_daily_C3_rot2, aes(x=Date, y=agbiom, col="green")) +
+  geom_line(data=FF_daily_C3_rot2_oates, aes(x=Date, y=agbiom, col="red")) +
+  ggtitle("Aboveground Biomass for Generalized vs. Date-Aligned 2-Day Rotation Simulation at Franbrook Farm") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6)) +
+  scale_color_discrete(name="Data Source", labels=c("Evaluation Data","Generalized Model","Date-Aligned Model"))
+
+# Line graph vs. point data
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Sim_vs_Obs_LAI_point_FF.tiff", units="in", height=5, width=9, res=300)
+ggplot() + geom_point(data=FF_val_recoded_recombined_renamed, aes(x=Date, y=plai, col=Management)) +
+  geom_line(data=FF_daily_C3, aes(x=Date, y=plai, col=Management)) +
+  ggtitle("Simulated vs. Observed LAI at FF") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Daily Leaf Area Index (m2 m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(6))
+
+# Line graph vs. point data
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/Sim_vs_Obs_agbiom_FF.tiff", units="in", height=5, width=9, res=300)
+agbiom_simvsobs_graph <- ggplot() + geom_point(data=FF_val_recoded_recombined_renamed, aes(x=Date, y=agbiom, col=Management)) +
+  geom_line(data=FF_daily_C3, aes(x=Date, y=agbiom, col=Management)) +
+  ggtitle("Simulated vs. Observed Aboveground Biomass at Franbrook Farm") +
+  theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  ylab("Aboveground Biomass (kg m-2)") + xlab("Date") + scale_x_date(breaks = scales::breaks_pretty(8)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(5))
+
+# Graph of C3 ratio over time for grazing at FF
+FF_daily_both <- FF_daily %>%
+  filter(Date >= '1979-01-01') %>%
+  filter(Location == "FF") %>%
+  filter(PFT == "Both Grasses") %>%
+  filter(l3agbiomfrac != "NaN")
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/C3_Ratio_Graph_Grazing.tiff", units="in", height=6, width=10, res=300)
+ggplot(data=FF_daily_both, aes(x=Date,y=l3agbiomfrac)) + geom_line(aes(col=Management)) +
+  ggtitle("Simulated Ratio of C3 ANPP to Total ANPP across Grass Management at Franbrook Farm") +
+  ylab("Ratio of C3 ANPP to Total NPP") + xlab("Year") + theme(plot.title=element_text(size=15),
+  axis.text=element_text(size=10),axis.title=element_text(size=12)) + facet_wrap(~Management) +
+  theme(legend.position="none")
+
+# ANPPtot and NPPtot combined graph
+tiff(file="/Users/huntermackin/Dropbox/Mac/Downloads/Research/Agro-IBIS/Grassland Projects/MS Thesis/Thesis Runs and Data Vis and Analysis/anpp_npp_y.tiff", units="in", height=5, width=11, res=300)
+ggarrange(anpp_y, npp_y, common.legend = TRUE, legend="bottom", labels=c("A","B"))
+
+
+### Regressions
+npptot_reg <- lm(data=FF_yearly_NPP, npptot ~ aet + CO2 + netrad + Management)
+summary(npptot_reg)
+
+anpptot_reg <- lm(data=FF_yearly_NPP, anpptot ~ aet + CO2 + netrad + Management)
+summary(anpptot_reg)
+
+# Creating difference datasets
+anpp_rot2_ung <- FF_yearly_NPP_rot2$anpptot - FF_yearly_NPP_ung$anpptot
+anpp_cont_ung <- FF_yearly_NPP_cont$anpptot - FF_yearly_NPP_ung$anpptot
+anpp_rot2_cont <- FF_yearly_NPP_rot2$anpptot - FF_yearly_NPP_cont$anpptot
+
+npp_rot2_ung <- FF_yearly_NPP_rot2$npptot - FF_yearly_NPP_ung$npptot
+npp_cont_ung <- FF_yearly_NPP_cont$npptot - FF_yearly_NPP_ung$npptot
+npp_rot2_cont <- FF_yearly_NPP_rot2$npptot - FF_yearly_NPP_cont$npptot
+
+aet_rot2_ung <- FF_yearly_NPP_rot2$aet_y - FF_yearly_NPP_ung$aet_y
+aet_cont_ung <- FF_yearly_NPP_cont$aet_y - FF_yearly_NPP_ung$aet_y
+aet_rot2_cont <- FF_yearly_NPP_rot2$aet_y - FF_yearly_NPP_cont$aet_y
+
+wsoi_rot2_ung <- FF_yearly_NPP_rot2$wsoi_y - FF_yearly_NPP_ung$wsoi_y
+wsoi_cont_ung <- FF_yearly_NPP_cont$wsoi_y - FF_yearly_NPP_ung$wsoi_y
+wsoi_rot2_cont <- FF_yearly_NPP_rot2$wsoi_y - FF_yearly_NPP_cont$wsoi_y
+
+FF_yearly_NPP_diff<- cbind(FF_yearly_NPP_ung, anpp_rot2_ung, anpp_cont_ung, anpp_rot2_cont,
+                           npp_rot2_ung, npp_cont_ung, npp_rot2_cont,
+                           aet_rot2_ung, aet_cont_ung, aet_rot2_cont,
+                           wsoi_rot2_ung, wsoi_cont_ung, wsoi_rot2_cont)
+
+reg_anpp_rot2_ung <- lm(data=FF_yearly_NPP_diff, anpp_rot2_ung ~ aet_rot2_ung + wsoi_rot2_ung)
+summary(reg_anpp_rot2_ung)
+reg_anpp_cont_ung <- lm(data=FF_yearly_NPP_diff, anpp_cont_ung ~ aet_cont_ung + wsoi_cont_ung)
+summary(reg_anpp_cont_ung)
+reg_anpp_rot2_cont <- lm(data=FF_yearly_NPP_diff, anpp_rot2_cont ~ aet_rot2_cont + wsoi_rot2_cont)
+summary(reg_anpp_rot2_cont)
+
+reg_npp_rot2_ung <- lm(data=FF_yearly_NPP_diff, npp_rot2_ung ~ aet_rot2_ung + wsoi_rot2_ung)
+summary(reg_npp_rot2_ung)
+reg_npp_cont_ung <- lm(data=FF_yearly_NPP_diff, npp_cont_ung ~ aet_cont_ung + wsoi_cont_ung)
+summary(reg_npp_cont_ung)
+reg_npp_rot2_cont <- lm(data=FF_yearly_NPP_diff, npp_rot2_cont ~ aet_rot2_cont + wsoi_rot2_cont)
+summary(reg_npp_rot2_cont)
+
+reg_ET_anpp_rot2_ung <- lm(data=FF_yearly_NPP_diff, aet_rot2_ung ~ anpp_rot2_ung)
+summary(reg_ET_anpp_rot2_ung)
+reg_ET_anpp_cont_ung <- lm(data=FF_yearly_NPP_diff, aet_cont_ung ~ anpp_cont_ung)
+summary(reg_ET_anpp_cont_ung)
+reg_ET_anpp_rot2_cont <- lm(data=FF_yearly_NPP_diff, aet_rot2_cont ~ anpp_rot2_cont)
+summary(reg_ET_anpp_rot2_cont)
+
+reg_ET_npp_rot2_ung <- lm(data=FF_yearly_NPP_diff, aet_rot2_ung ~ npp_rot2_ung)
+summary(reg_ET_npp_rot2_ung)
+reg_ET_npp_cont_ung <- lm(data=FF_yearly_NPP_diff, aet_cont_ung ~ npp_cont_ung)
+summary(reg_ET_npp_cont_ung)
+reg_ET_npp_rot2_cont <- lm(data=FF_yearly_NPP_diff, aet_rot2_cont ~ npp_rot2_cont)
+summary(reg_ET_npp_rot2_cont)
+
+t.test(data=FF_yearly_NPP, npp_rot2_ung, npp_cont_ung)
+
+view(FF_yearly_NPP)
+
+```
+
